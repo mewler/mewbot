@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: mewbot
+Upstream-Contact: Benedict Harcourt <ben.harcourt@harcourtprogramming.co.uk>
+Source: https://github.com/javajawa/mewbot
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...
