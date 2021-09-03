@@ -6,12 +6,69 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # Kitteh's Bot Framework/Infrastructure
 
-- Write a bot in python
-- 
+## Introduction
+
+`mewbot` is a proposed bot infrastructure which will attempt to provide a
+generic framework for writing "bots" — namely automated messaging systems
+running in social spaces such as Twitch chats, Discords, and so forth.
+
+The codebase will be able to run multiple "bots", which can be configured
+via an API or Web GUI. The configuration will be stored as JSON/YAML (tbd)
+in a way not dissimilar to Kubernetes configuration.
+
+Python is the language chosen for development, as it allows for the clever
+registration of classes via metaclasses, and in-built help with presenting
+type information.
+
+### A Bot's Context
+
+"What is the scope of a bot?" is an interesting question when building a
+generic bot system.
+
+A Twitch bot makes an excellent example: there are generally at least two
+different twitch accounts involved in a twitch bot:
+
+ - The streamer (e.g. `BurgerOni`)
+ - The bot (e.g. `NightBot`)
+
+The streamer may have multiple bots, and the bot can be running for
+multiple streamers, all with a different configurations.
+(In fact, NightBot is at time of writing the most common bot on Twitch).
+
+The combination of a bot account and a space for it to run in is the
+basis of a bot's context, and where configuration is bound to.
+In this infrastructure, a `Bot` is collection of behaviours (things
+the bot does) that is bound to one or more contexts.
+
+### Intentional Design Limitations
+
+#### Languages
+
+English-language only: features where the system is providing text
+information are only designed to work in English, with no support
+for translations provided.
+
+This will effect defaults / fall backs — error messages, the admin
+UI, logging, and so forth.
+
+TODO: explicitly call out that the default pronouns will be in english
+and how that works either here on in the text replacements section.
 
 ## Primary Components
 
-ERD goes here
+TODO: ERD goes here
+
+### Bot
+
+The top level of data structure in the system is the Bot, which represents
+a group of bot contexts that have the same configuration.
+
+The purpose of this class is to tie together the Input/Output configuration
+(which defines the [context of the bot](#a-bots-context)) with the
+behaviours the bot performs.
+To support this there are also the data stores, which store state,
+and the access control settings, which defines what users can edit the
+configuration.
 
 ```python
 class Bot:
@@ -31,18 +88,19 @@ Trigger's, Condition's and Action's can all have properties, which can be edited
 
 ### IOConfig / Input / Output
 
-A "bot" is a fundemtnally transformative process -- input is accept in the form
-of commands, messages, etc. and then some output is generated (such as a reply).
+A "bot" is a fundamentally transformative process — input is accepted
+in the form of commands, messages, etc. and then some output is generated
+(such as a reply).
 
-For some systems, this will be one unified API -- Discord bots need only one
-key to interact with all guilds and perform all the things they want to.
+For some systems, this will be one unified API — Discord bots need only
+one key to interact with all guilds and perform all the things they want to.
 
 On the other hand, an advanced twitch bot requires multiple inputs and
-(potentially) multiple outputs. In order to read and respond to chat, tokens
-must be generated for the bot account itself; in order to look for other events
-such as followers, subscriptions, rewards, and raids, tokens have to be made
-for the streamer's account -- which is generally a different user/channel
-to the bot.
+(potentially) multiple outputs. In order to read and respond to chat,
+tokens must be generated for the bot account itself; in order to look
+for other events such as followers, subscriptions, rewards, and raids,
+tokens have to be made for the streamer's account — which is generally
+a different user/channel to the bot.
 
 Other inputs might include API calls/webhooks to the management system itself,
 allowing for devices like stream decks to be configured to directly interact
@@ -86,33 +144,60 @@ These will be associated with an output for the "reply" logic.
 The `Output` class will not be used a lot, but will be available for giving
 a target for "replies" to events triggered by time passing or webhooks.
 
-Outputs will be responsible for string replacements -- `${user}` gives full
+Outputs will be responsible for string replacements — `${user}` gives full
 username, `${@user}` @s them, `${user()}` gives the username but tries to
 contextually remove trailing things in brackets (e.g. pronouns)
 which aren't part of the 'name' per se.
 
-Pronouns -- there should be a special datastore for pronouns, and a pre-built config that supplied !pronouns to get and set them. If possible, having better twitch's and discord roles as data sources for this. This would then allow a ${user_they} to return they, he, she etc. if the pronoun has been set, or if the bot is able to auto detect it, otherwise just use the full name. ${they} will go for just a pronoun, using "they" by default, but be discouraged (I can see cases where a name wouldn't scan)
+TODO: Pronouns — there should be a special datastore for pronouns, and a pre-built config that supplied !pronouns to get and set them. If possible, having better twitch's and discord roles as data sources for this. This would then allow a ${user_they} to return they, he, she etc. if the pronoun has been set, or if the bot is able to auto detect it, otherwise just use the full name. ${they} will go for just a pronoun, using "they" by default, but be discouraged (I can see cases where a name wouldn't scan)
+
+### Behaviour
+
+```python
+class Behaviour:
+  triggers:   List[Trigger]     # This of things that can trigger this behaviour
+  conditions: List[Condition]   # conditions on the action being called when it is matched (e.g. "is subscribed")
+  actions:    List[Action]      # the things to do if an event matches, and the conditions are met
+```
+
+#### Template
+
+These things are going to be big and complicated, so modules should
+provide Templates which help users quickly create a new Behaviour.
+
+Like the other elements, these have a number of properties that can
+be presented to the UI/API, but the `Template` is not stored as part
+of the `Bot` configuration — instead it is used to generate the
+behaviour and add it to the bot.
 
 ### Datastore
 
 Should have who last changed, when, and from where for
 any piece of data. it may not matter for counters, but it'll matter for other things
 
+- The cat/dog API can be a datastore — a ListDataStore primarily needs a count() and random() function, and for these it probably won't matter to just return count of 0 or 1 or some such. That means that those APIs don't need to be custom actions, and could be used as other kinds of actions.
+
+Basic data store types:
+ - int
+ - string
+ - List[string]
+
+interface for list-type datastores
+```
 len()
 randomEntry()
-randomEntries()
-next()
-reset()
+randomEntries(int)
+next()   # Iterator next
+reset()  # Iterator reset
+shuffle()  # ?? maybe
+empty()  # Remove everything
+```
 
 ### Trigger
 
 ### Conditions
 
 ### Actions
-
-### Behaviour
-
-#### Template
 
 ### Context Flow
 
@@ -121,6 +206,9 @@ An event that is triggering a behaviour must come with
 ## Configuration + Discoverability
 
 ### Registry
+
+- Validation — modules will need to have a validate function. Where possible, this should check real things (e.g., if one of your configuration options is a discord channel, does that channel exist).
+- The discord channel thing raises the question of actual valid vs. presentation value. Discord channels are actually long numbers, not names....
 
 ### Properties
 
@@ -167,11 +255,17 @@ main edit view with the inputs.
 +-------------------------------+------------------------------+------------------------------+
 ```
 
+### Datastore Editing UI
+
+- Datastores will need to be editable in the UI. Esepecially moderated datastores
+- Datastore moderated
+- Clear button
+
 ### Reviewing Logs
 
 ### Testing + Committing Changes
 
-Test mode -- because stuff will be in version control, there should be a
+Test mode — because stuff will be in version control, there should be a
 button to apply your changes temporarily without committing them.
 This should force your to keep the test tab open and "active" otherwise
 it'll revert to the known config.
@@ -247,12 +341,3 @@ Behaviours
 ### Cute Animal Pictures
 
 ### Go Live Notifications
-
-## Scratch Pad
-
- - Datastores will need to be editable in the UI. Esepecially moderated datastores
- - Validation -- modules will need to have a validate function. Where possible, this should check real things (e.g., if one of your configuration options is a discord channel, does that channel exist).
- - The discord channel thing raises the question of actual valid vs. presentation value. Discord channels are actually long numbers, not names....
- - The cat/dog API can be a datastore -- a ListDataStore primarily needs a count() and random() function, and for these it probably won't matter to just return count of 0 or 1 or some such. That means that those APIs don't need to be custom actions, and could be used as other kinds of actions.
-
-
