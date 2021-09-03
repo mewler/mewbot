@@ -6,13 +6,10 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # Kitteh's Bot Framework/Infrastructure
 
-fds
 
-# Primary Components
+## Primary Components
 
-The
-
-## Input / Output
+### Input / Output
 
 ERD goes here
 
@@ -30,7 +27,7 @@ Behaviour:
 Trigger's, Condition's and Action's can all have properties, which can be edited in the UI
 ```
 
-## Datastore
+### Datastore
 
 len()
 randomEntry()
@@ -38,37 +35,37 @@ randomEntries()
 next()
 reset()
 
-## Trigger
+### Trigger
 
-## Conditions
+### Conditions
 
-## Actions
+### Actions
 
-## Behaviour
+### Behaviour
 
-### Template
+#### Template
 
-## Context Flow
+### Context Flow
 
 An event that is triggering a behaviour must come with
 
-# Configuration + Discoverability
+## Configuration + Discoverability
 
-## Registry
+### Registry
 
-## Properties
+### Properties
 
-## Human Readable Descriptions
+### Human Readable Descriptions
 
-## Yaml Representation
+### Yaml Representation
 
-## Version Control
+### Version Control
 
-# User Interface
+## User Interface
 
-## Login + ACL
+### Login + ACL
 
-## Behaviour Editing UI
+### Behaviour Editing UI
 
 ```
 +-------------------------------+------------------------------+------------------------------+
@@ -90,35 +87,35 @@ An event that is triggering a behaviour must come with
 +-------------------------------+------------------------------+------------------------------+
 ```
 
-## Reviewing Logs
+### Reviewing Logs
 
-## Testing + Committing Changes
+### Testing + Committing Changes
 
-# Bot Runner
+## Bot Runner
 
-## Event Queue
+### Event Queue
 
-## Compiling Triggers
+### Compiling Triggers
 
-## Scheduling Triggers
+### Scheduling Triggers
 
-# Logging
+## Logging
 
-## Change Logs (Version Control)
+### Change Logs (Version Control)
 
-## Text Logs
+### Text Logs
 
-## Prometheus Metrics
+### Prometheus Metrics
 
-# User Stories
+## User Stories
 
-## Basic call-and-response
+### Basic call-and-response
 
-## Randomised Responses
+### Randomised Responses
 
-## Shoutouts for Raids and VIPs
+### Shoutouts for Raids and VIPs
 
-## Counters
+### Counters
 
 ```
 Data Stores
@@ -137,11 +134,11 @@ Behaviours
 |--------------------------|--------------|-------------------------------------|
 ```
 
-## Quote Database
+### Quote Database
 
-## Reacting to Subscriptions
+### Reacting to Subscriptions
 
-## Competitions
+### Competitions
 
 ```
 | Chat command(text=startgiveaway)     | Is Moderator   | - Clear 'giveaway' datastore               |
@@ -154,13 +151,13 @@ Behaviours
 | Chat command(text=drawwinner)        | Is Moderator   | - Get random item for datastore 'giveaway' |
 ```
 
-## Give game details based on current streamed game
+### Give game details based on current streamed game
 
-## Cute Animal Pictures
+### Cute Animal Pictures
 
-## Go Live Notifications
+### Go Live Notifications
 
-# Scratch Pad
+## Scratch Pad
 
  - DataStores -- should have who last changed, when, and from where for any piece of data. it may not matter for counters, but it'll matter for other things
  - String replacements -- ${user} gives full username, ${@user} at-s them, ${user()} gives the username but tries to contextually remove trailing things in brackets (e.g. pronouns) which aren't part of the 'name' per se
