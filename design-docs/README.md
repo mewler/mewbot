@@ -149,7 +149,15 @@ username, `${@user}` @s them, `${user()}` gives the username but tries to
 contextually remove trailing things in brackets (e.g. pronouns)
 which aren't part of the 'name' per se.
 
-TODO: Pronouns — there should be a special datastore for pronouns, and a pre-built config that supplied !pronouns to get and set them. If possible, having better twitch's and discord roles as data sources for this. This would then allow a ${user_they} to return they, he, she etc. if the pronoun has been set, or if the bot is able to auto detect it, otherwise just use the full name. ${they} will go for just a pronoun, using "they" by default, but be discouraged (I can see cases where a name wouldn't scan)
+TODO: Pronouns — there should be a special datastore for pronouns, and a
+pre-built config that supplied !pronouns to get and set them.
+If possible, having better twitch's and discord roles as data sources for this.
+This would then allow a `${user_they}` to return they, she, he etc. if the
+pronoun has been set, or if the bot is able to auto detect it, otherwise
+just use the user name.
+`${they}` will go for just a pronoun, using "they" by default, but be
+discouraged (I can see cases where a name wouldn't scan, but maybe this should
+not be included in the spec).
 
 ### Behaviour
 
@@ -162,36 +170,149 @@ class Behaviour:
 
 #### Template
 
-These things are going to be big and complicated, so modules should
-provide Templates which help users quickly create a new Behaviour.
+Behaviours are going to be big and complicated, so modules should
+provide Templates which help users quickly create them based on common
+use cases.
 
 Like the other elements, these have a number of properties that can
 be presented to the UI/API, but the `Template` is not stored as part
 of the `Bot` configuration — instead it is used to generate the
-behaviour and add it to the bot.
+`Behaviour` and add it to the bot.
 
 ### Datastore
 
-Should have who last changed, when, and from where for
-any piece of data. it may not matter for counters, but it'll matter for other things
+A datastore is a represents all persistent user-defined parts of bot state,
+which can then the used by Behaviours. The data stored in these datastores
+is typed.
 
-- The cat/dog API can be a datastore — a ListDataStore primarily needs a count() and random() function, and for these it probably won't matter to just return count of 0 or 1 or some such. That means that those APIs don't need to be custom actions, and could be used as other kinds of actions.
+#### Single-Valued Datastore
 
-Basic data store types:
- - int
- - string
- - List[string]
+The most trivial kind of datastore stores a single value, and has a getter
+and setter.
+```python
+T = TypeVar("T")
 
-interface for list-type datastores
+class DataRecord(Generic[T]):
+  value: T
+  modified_at: datetime.datetime
+  modified_by: str
+
+class Datastore(Generic[T]):
+  name: str
+
+  def get() -> DataRecord[T]:
+    ...
+
+  def set(value: Optional[T]) -> None:
+    ...
+
+  def clear() -> None:
+    self.set(None)
 ```
-len()
-randomEntry()
-randomEntries(int)
-next()   # Iterator next
-reset()  # Iterator reset
-shuffle()  # ?? maybe
-empty()  # Remove everything
+
+The `name` of the datastore is a unique-per-bot name which is used to bind it
+to behaviours in the UI.
+
+In some cases, the setter may be not implemented, but it must never throw
+an exception. This might be useful for a RandomNumberDataSource (which returns
+a different pseudo-random number each call), or a DataSource that is wrapping
+an external API.
+
+When the `set` is not implemented, `clear` should likewise be a no-op. `clear`
+should also be a valid operation if `set` is, but may use a differnt default
+value. `set` may reject `None` as a value, if having an undefined value does not
+make sense for the datastore.
+
+#### List Datastores
+
+One other Datasource contract is defined as part of the specification, which
+is the `List` equivalent of the above datasource.
+
+```python
+T = TypeVar("T")
+
+def ListDatastore(Generic[List[T]]):
+  def __getitem__(self, key) -> DataRecord[T]:
+    ...
+
+  def __setitem__(self, key, value: Optional[T]) -> None:
+    ...
+
+  def __delitem__(self, key) -> None:
+    ...
+
+  def __len__() -> int:
+    ...
+
+  def random_entry() -> Datarecord[T]:
+    ...
+
+  def random_entries(count: int) -> Sequence[Datarecord[T]]:
+    ...
+
+  def get() -> Datarecord[T]:
+    """Should function like an iterator, returning the next value each time."""
+
+  def set() -> Datarecord[T]:
+    """If __setitem__ is defined, and this is an incrementing list, this
+       should function as per list.append()"""
+
+   def clear() -> Datarecord[T]:
+     """If __delitem__ is defined, this should delete all items"""
 ```
+
+The generic List Datastore is only defined for 0-based contiguous lists.
+When designing custom implementation that extend this class, you should
+be aware that behaviours that are looking for any list storage could be
+using your specific implementation, and design around that.
+
+As with the single valued version, having the datastore be writable is
+optional; this is for when the datastore is wrapping some other external
+or immutable source of data.
+
+One of `random_entry()` or `__getitem__` must be defined. If `__getitem__`
+is defined, `__len__` must be as well. If `random_entry` is defined,
+then either `__len__` must be defined, or `random_entries` needs a custom
+implementation, as the default one will rely on knowning the length.
+
+#### DataRecord Audit Information
+
+As part of the built in format for data stores, each record will record
+when it was modified and some contextual information for what by.
+
+TODO: Determine the exact format of what should be recorded as part of
+this record, and update the function signatures above.
+
+This data includes the behaviour that made the change (or if it was made
+via the UI), and an (optional) username for context. In behaviours that
+are triggered off of chat messages, this will be the name of the user
+who sent the message. For changes in the UI, this will be the user who
+was logged into the UI.
+
+#### Data Moderation
+
+TODO: Determine if this is to be a built-in feature of _all_ list APIs.
+TODO: Should this in fact be a part of the DataRecord, and include who
+      did the moderation action?
+
+Datastores which are using user-submitted data may want to undergo
+moderation, and have records stored in the dataset which will not be
+returned by a random() or a get() call.
+
+#### Data Persistence
+
+As well as the abstract classes outlined here, implementations will be
+provided that can store datastores of the primitive types in an SQLite
+database. This will use one table for all of the single valued
+datastores (indexed by the datastore name), and a table per list
+datastore, named after the datastore (to optimise length and other calls).
+
+TODO: Decide whether this should explicitly be able to handle any
+JSON-encodable structure, rather than just the primitive types. Storing
+the data as JSON also means there is only one column type to deal with.
+
+These are expected to be the primary datastores in use, except for wrapping
+external calls (such as to APIs), or certain complex data types.
 
 ### Trigger
 
