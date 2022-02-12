@@ -21,10 +21,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Setup Python 3.7
+    - name: Setup Python 3.9
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.9
 
     - name: Install dependencies
       run:  pip install -r requirements-dev.txt
@@ -34,12 +34,15 @@ jobs:
       with:
         github_token: ${{ secrets.github_token }}
 
-        black:     true
-        black_dir: src
+        black:      true
+        black_dir:  src
 
         flake8:     true
         flake8_dir: src
 
-        mypy:      true
-        mypy_dir:  src
-        mypy_args: --strict
+        mypy:       true
+        mypy_dir:   src
+        mypy_args:  --strict
+
+        pylint:     true
+        pylint_dir: src
