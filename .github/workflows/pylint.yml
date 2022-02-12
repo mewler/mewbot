@@ -13,6 +13,33 @@ on:
       - mainline
 
 jobs:
+  py-lint:
+    name: Lint Python code
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+
+    - name: Load Depedency Cache
+      id: cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run:  pip install -r requirements-dev.txt
+
+    - name: Run PyLint
+      run: pylint src | python .github/workflows/pylint_to_gh_action.py
+
   lint:
     name: Run Linters
     runs-on: ubuntu-latest
@@ -25,6 +52,14 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.9
+
+    - name: Load Depedency Cache
+      id: cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run:  pip install -r requirements-dev.txt
@@ -43,6 +78,3 @@ jobs:
         mypy:       true
         mypy_dir:   src
         mypy_args:  --strict
-
-        pylint:     true
-        pylint_dir: src
