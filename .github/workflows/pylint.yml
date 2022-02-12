@@ -38,7 +38,7 @@ jobs:
       run:  pip install -r requirements-dev.txt
 
     - name: Run PyLint
-      run: pylint src | python .github/workflows/pylint_to_gh_action.py
+      run: pylint src | python .github/workflows/pylint_to_gh_action.py || true
 
   lint:
     name: Run Linters

@@ -135,7 +135,10 @@ class SendMessageToTwitch(Action):
 
 
 def main() -> None:
-    from mewbot.component import Component, load_from_config
+    from mewbot.component import (  # pylint: disable=import-outside-toplevel
+        Component,
+        load_from_config,
+    )
 
     class Foo(Component):
         _channel: str

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 
 from typing import Any, Dict, List, Optional, Set, Type
 
@@ -48,7 +49,7 @@ class Bot:
     def _marshal_inputs(self) -> Set[Input]:
         inputs: Set[Input] = set()
 
-        inputs = set(_input for _input in [connection.get_inputs() for connection in self.io])
+        inputs = set(*itertools.chain(connection.get_inputs() for connection in self.io))
 
         return inputs
 
@@ -87,7 +88,9 @@ class BotRunner:
             _input.bind(self.input_event_queue)
             asyncio.create_task(_input.run())
 
-        # FIXME: Need to bind the output event queue to the actions
+        for behaviour in itertools.chain(*self.behaviours.values()):
+            for action in behaviour.actions:
+                action.bind(self.output_event_queue)
 
         asyncio.create_task(self.process_input_queue())
         asyncio.create_task(self.process_output_queue())
