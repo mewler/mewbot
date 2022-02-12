@@ -5,8 +5,11 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
 cd "${0%/*}/../src"
+cd ..
 
-black .
-flake8
-mypy --strict --pretty .
-pylint .
+MODULES="mewbot"
+
+black src
+flake8 src
+mypy --strict --pretty src
+pylint src

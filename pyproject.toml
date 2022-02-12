@@ -15,13 +15,18 @@ jobs=4
 
 [tool.pylint."MESSAGES CONTROL"]
 
-disable="bad-continuation"
+disable=[
+    "bad-continuation",
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+]
 
 [tool.coverage.run]
 
 branch=true
 relative_files=true
-source=["orm"]
+source=["src"]
 
 [tool.coverage.report]
 
