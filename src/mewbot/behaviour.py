@@ -55,7 +55,7 @@ class Action(BehaviourComponent):
         self._queue.put_nowait(event)
 
     @abc.abstractmethod
-    def act(self, event: InputEvent, state: Dict[str, Any]) -> Dict[str, Any]:
+    def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         pass
 
 
@@ -107,4 +107,4 @@ class Behaviour:
         state: Dict[str, Any] = {}
 
         for action in self.actions:
-            state = action.act(event, state)
+            action.act(event, state)

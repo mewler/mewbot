@@ -69,10 +69,8 @@ class PickUnhelpfulMessageAction(Action):
     def message_store(self, store: DataSource[str]) -> None:
         self._store = store
 
-    def act(self, event: InputEvent, state: Dict[str, Any]) -> Dict[str, Any]:
+    def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         state["message"] = self._store.get()
-
-        return state
 
 
 class SendReplyToTwitch(Action):
@@ -84,9 +82,9 @@ class SendReplyToTwitch(Action):
     def produces_outputs() -> Set[Type[OutputEvent]]:
         return {TwitchChatMessageOutput}
 
-    def act(self, event: InputEvent, state: Dict[str, Any]) -> Dict[str, Any]:
+    def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         if not isinstance(event, TwitchChatMessage):
-            return state
+            return
 
         message = TwitchChatMessageOutput(
             channel=event.channel,
@@ -94,8 +92,6 @@ class SendReplyToTwitch(Action):
         )
 
         self.send(message)
-
-        return state
 
 
 class SendMessageToTwitch(Action):
@@ -117,9 +113,9 @@ class SendMessageToTwitch(Action):
     def twitch_channel(self, channel: str) -> None:
         self._channel = channel
 
-    def act(self, event: InputEvent, state: Dict[str, Any]) -> Dict[str, Any]:
+    def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         if not isinstance(event, TextInputEvent):
-            return state
+            return
 
         message = TwitchChatMessageOutput(
             channel=self.twitch_channel,
@@ -127,8 +123,6 @@ class SendMessageToTwitch(Action):
         )
 
         self.send(message)
-
-        return state
 
 
 # ============================================================================
