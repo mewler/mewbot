@@ -9,8 +9,8 @@ on:
     branches:
       - mainline
   pull_request_target:
-    branches:
-      - mainline
+#    branches:
+#      - mainline
 
 jobs:
   py-lint:
