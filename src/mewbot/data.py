@@ -8,12 +8,12 @@ import dataclasses
 import datetime
 import enum
 
-DataType = TypeVar("DataType")
+DataType = TypeVar("DataType")  # pylint: disable=invalid-name
 
 
 class DataSource(Generic[DataType]):
     """A source of data for use in behaviours.
-    A data source can contains any number of items with a common primitive type.
+    A data source can contain any number of items with a common primitive type.
 
     The source can be accessed as if it is an array, dictionary, or single value;
     each subclass must support one of these, but may support any combination
@@ -31,8 +31,8 @@ class DataSource(Generic[DataType]):
     def __len__(self) -> int:
         """Returns the number of items in this DataStore.
 
-        This may return -1 to indicte that the length is unknown, otherwise it
-        should return an a usable value that matches the length of .keys()
+        This may return -1 to indicate that the length is unknown, otherwise it
+        should return a usable value that matches the length of .keys()
         (for sources that work like dictionary) or the maximum slice value
         (for sources that work like a sequence)."""
 

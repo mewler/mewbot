@@ -48,7 +48,7 @@ English-language only: features where the system is providing text
 information are only designed to work in English, with no support
 for translations provided.
 
-This will effect defaults / fall backs — error messages, the admin
+This will affect defaults / fall backs — error messages, the admin
 UI, logging, and so forth.
 
 TODO: explicitly call out that the default pronouns will be in english
@@ -108,12 +108,14 @@ with the bot.
 
 #### IOConfig
 
-From an implementation perspective, these will be configures as inputs/outputs
+From an implementation perspective, these will be configured as inputs/outputs
 (so cases like discord where one connection is both don't require two to be
 configured). These configurations will then present a list of Inputs and Outputs
 which can be used in Triggers.
 
 ```python
+from mewbot.api.v1 import *
+
 class Discord(IOConfig):
 	@property
 	def oauth_token(self) -> str:
@@ -124,7 +126,7 @@ class Discord(IOConfig):
 	def guilds(self) -> Optional[Set[str]]:
 		"""Which Guild IDs to connect this bot to.
 
-		If empty, will bind to all guilds that the bot has accces to"""
+		If empty, will bind to all guilds that the bot has access to"""
 		...
 
 	def get_inputs(self) -> Sequence[Input]:
@@ -190,6 +192,8 @@ is typed.
 The most trivial kind of datastore stores a single value, and has a getter
 and setter.
 ```python
+from typing import *
+
 T = TypeVar("T")
 
 class DataRecord(Generic[T]):
@@ -200,13 +204,13 @@ class DataRecord(Generic[T]):
 class Datastore(Generic[T]):
   name: str
 
-  def get() -> DataRecord[T]:
+  def get(self) -> DataRecord[T]:
     ...
 
-  def set(value: Optional[T]) -> None:
+  def set(self, value: Optional[T]) -> None:
     ...
 
-  def clear() -> None:
+  def clear(self) -> None:
     self.set(None)
 ```
 
@@ -229,9 +233,11 @@ One other Datasource contract is defined as part of the specification, which
 is the `List` equivalent of the above datasource.
 
 ```python
+from typing import *
+
 T = TypeVar("T")
 
-def ListDatastore(Generic[List[T]]):
+class ListDatastore(Generic[List[T]]):
   def __getitem__(self, key) -> DataRecord[T]:
     ...
 
@@ -241,23 +247,23 @@ def ListDatastore(Generic[List[T]]):
   def __delitem__(self, key) -> None:
     ...
 
-  def __len__() -> int:
+  def __len__(self) -> int:
     ...
 
-  def random_entry() -> Datarecord[T]:
+  def random_entry(self) -> DataRecord[T]:
     ...
 
-  def random_entries(count: int) -> Sequence[Datarecord[T]]:
+  def random_entries(count: int) -> Sequence[DataRecord[T]]:
     ...
 
-  def get() -> Datarecord[T]:
+  def get() -> DataRecord[T]:
     """Should function like an iterator, returning the next value each time."""
 
-  def set() -> Datarecord[T]:
+  def set() -> DataRecord[T]:
     """If __setitem__ is defined, and this is an incrementing list, this
        should function as per list.append()"""
 
-   def clear() -> Datarecord[T]:
+   def clear() -> DataRecord[T]:
      """If __delitem__ is defined, this should delete all items"""
 ```
 
