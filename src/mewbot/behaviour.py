@@ -45,7 +45,7 @@ class Behaviour:
     def consumes_inputs(self) -> Set[Type[InputEvent]]:
         return self.interests
 
-    def process(self, event: InputEvent) -> None:
+    async def process(self, event: InputEvent) -> None:
         if not any(True for trigger in self.triggers if trigger.matches(event)):
             return
 
@@ -55,4 +55,4 @@ class Behaviour:
         state: Dict[str, Any] = {}
 
         for action in self.actions:
-            action.act(event, state)
+            await action.act(event, state)

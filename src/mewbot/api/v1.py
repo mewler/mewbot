@@ -106,12 +106,12 @@ class Action(Component):
     def bind(self, queue: OutputQueue) -> None:
         self._queue = queue
 
-    def send(self, event: OutputEvent) -> None:
+    async def send(self, event: OutputEvent) -> None:
         if not self._queue:
             raise Exception("Can not sent events before queue initialisation")
 
         self._queue.put_nowait(event)
 
     @abc.abstractmethod
-    def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
+    async def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         pass

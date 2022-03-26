@@ -129,7 +129,7 @@ class ActionInterface(Protocol):
     def bind(self, queue: OutputQueue) -> None:
         pass
 
-    def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
+    async def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         pass
 
 

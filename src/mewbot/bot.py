@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+import logging
+import signal
 
 from typing import Any, Dict, List, Optional, Set, Type
 
@@ -18,6 +20,8 @@ from mewbot.core import (
     InputQueue,
     OutputQueue,
 )
+
+logging.basicConfig(level=logging.INFO)
 
 
 class Bot:
@@ -90,37 +94,65 @@ class BotRunner:
         inputs: Set[InputInterface],
         outputs: Dict[Type[OutputEvent], Set[OutputInterface]],
     ) -> None:
+
+        self.logger = logging.getLogger(__name__ + "BotRunner")
+
         self.input_event_queue = InputQueue()
         self.output_event_queue = OutputQueue()
+
         self.inputs = inputs
         self.outputs = outputs
         self.behaviours = behaviours
 
-    def run(self) -> None:
+    def run(self, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+        loop = loop if loop else asyncio.get_event_loop()
+
+        # Handle correctly terminating the loop
+        try:
+            loop.add_signal_handler(signal.SIGINT, loop.stop)
+            loop.add_signal_handler(signal.SIGTERM, loop.stop)
+        except NotImplementedError:
+            pass
+
+        loop.create_task(self.create_tasks(loop))
+        try:
+            loop.run_forever()
+        finally:
+            loop.close()
+
+        # Seemed to fix a shutdown bug - now less sure
+        asyncio.ensure_future(self.create_tasks(loop), loop=loop)
+        # Need a running event loop for some of the io init tasks
+
+    async def create_tasks(self, loop: asyncio.AbstractEventLoop) -> None:
+        self.logger.info("Starting main event loop")
+
+        # Startup the inputs
+        self.logger.info("self.inputs: %s", ",".join(map(str, self.inputs)))
         for _input in self.inputs:
             _input.bind(self.input_event_queue)
-            asyncio.create_task(_input.run())
+            loop.create_task(_input.run())
 
+        # Startup the outputs - which are contained in the behaviors
+        self.logger.info("self.behaviours: %s", ",".join(map(str, self.behaviours.values())))
         for behaviour in itertools.chain(*self.behaviours.values()):
             for action in behaviour.actions:
                 action.bind(self.output_event_queue)
 
-        asyncio.create_task(self.process_input_queue())
-        asyncio.create_task(self.process_output_queue())
-
-        pending = asyncio.all_tasks()
-        asyncio.get_event_loop().run_until_complete(asyncio.gather(*pending))
+        loop.create_task(self.process_input_queue())
+        loop.create_task(self.process_output_queue(loop))
 
     async def process_input_queue(self) -> None:
         while True:
             event = await self.input_event_queue.get()
 
             for behaviour in self.behaviours[type(event)]:
-                behaviour.process(event)
+                await behaviour.process(event)
 
-    async def process_output_queue(self) -> None:
+    async def process_output_queue(self, loop: asyncio.AbstractEventLoop) -> None:
+
         while True:
             event = await self.output_event_queue.get()
 
             for output in self.outputs[type(event)]:
-                asyncio.create_task(output.output(event))
+                loop.create_task(output.output(event))
