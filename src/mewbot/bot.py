@@ -9,11 +9,11 @@ from typing import Any, Dict, List, Optional, Set, Type
 
 from mewbot.behaviour import Behaviour
 from mewbot.data import DataSource
-from mewbot.io import (
-    IOConfig,
-    Input,
+from mewbot.core import (
+    IOConfigInterface,
+    InputInterface,
     InputEvent,
-    Output,
+    OutputInterface,
     OutputEvent,
     InputQueue,
     OutputQueue,
@@ -22,9 +22,15 @@ from mewbot.io import (
 
 class Bot:
     name: str  # The bot's name
-    io: List[IOConfig]  # Connections to bot makes to other services
+    io_configs: List[IOConfigInterface]  # Connections to bot makes to other services
     behaviours: List[Behaviour]  # All the things the bot does
     datastores: Dict[str, DataSource[Any]]  # Data sources and stores for this bot
+
+    def __init__(self) -> None:
+        self.name = "not_set"
+        self.io_configs = []
+        self.behaviours = []
+        self.datastores = {}
 
     def run(self) -> None:
         runner = BotRunner(
@@ -33,6 +39,12 @@ class Bot:
             self._marshal_outputs(),
         )
         runner.run()
+
+    def add_io_config(self, ioc: IOConfigInterface) -> None:
+        self.io_configs.append(ioc)
+
+    def add_behaviour(self, behaviour: Behaviour) -> None:
+        self.behaviours.append(behaviour)
 
     def get_data_source(self, name: str) -> Optional[DataSource[Any]]:
         return self.datastores.get(name)
@@ -46,17 +58,17 @@ class Bot:
 
         return behaviours
 
-    def _marshal_inputs(self) -> Set[Input]:
-        inputs: Set[Input] = set()
-
-        inputs = set(*itertools.chain(connection.get_inputs() for connection in self.io))
+    def _marshal_inputs(self) -> Set[InputInterface]:
+        inputs = set(
+            *itertools.chain(connection.get_inputs() for connection in self.io_configs)
+        )
 
         return inputs
 
-    def _marshal_outputs(self) -> Dict[Type[OutputEvent], Set[Output]]:
-        outputs: Dict[Type[OutputEvent], Set[Output]] = {}
+    def _marshal_outputs(self) -> Dict[Type[OutputEvent], Set[OutputInterface]]:
+        outputs: Dict[Type[OutputEvent], Set[OutputInterface]] = {}
 
-        for connection in self.io:
+        for connection in self.io_configs:
             for _output in connection.get_outputs():
                 for event_type in _output.consumes_outputs():
                     outputs.setdefault(event_type, set()).add(_output)
@@ -68,14 +80,15 @@ class BotRunner:
     input_event_queue: InputQueue
     output_event_queue: OutputQueue
 
-    outputs: Dict[Type[OutputEvent], Set[Output]] = {}
+    inputs: Set[InputInterface]
+    outputs: Dict[Type[OutputEvent], Set[OutputInterface]] = {}
     behaviours: Dict[Type[InputEvent], Set[Behaviour]] = {}
 
     def __init__(
         self,
         behaviours: Dict[Type[InputEvent], Set[Behaviour]],
-        inputs: Set[Input],
-        outputs: Dict[Type[OutputEvent], Set[Output]],
+        inputs: Set[InputInterface],
+        outputs: Dict[Type[OutputEvent], Set[OutputInterface]],
     ) -> None:
         self.input_event_queue = InputQueue()
         self.output_event_queue = OutputQueue()
