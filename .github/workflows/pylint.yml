@@ -9,8 +9,6 @@ on:
     branches:
       - mainline
   pull_request_target:
-#    branches:
-#      - mainline
 
 jobs:
   py-lint:
@@ -70,11 +68,11 @@ jobs:
         github_token: ${{ secrets.github_token }}
 
         black:      true
-        black_dir:  src
+        black_dir:  src examples
 
         flake8:     true
-        flake8_dir: src
+        flake8_dir: src examples
 
         mypy:       true
-        mypy_dir:   src
+        mypy_dir:   src examples
         mypy_args:  --strict
