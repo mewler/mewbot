@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import setuptools
+import setuptools  # type: ignore
 
 with open("README.md", "r", encoding="utf-8") as rmf:
     long_description = rmf.read()
@@ -11,14 +11,14 @@ with open("LICENSE.md", "r", encoding="utf-8") as lf:
 setuptools.setup(
     name="mewbot",
     version="0.0.1",
-    author="Benedict Harcout $ Alex Cameron",
-    author_email="[Ben public email for this project] & mewbot@quicksilver.london",
+    author="Benedict Harcourt & Alex Cameron",
+    author_email="mewbot@tea-cats.co.uk & mewbot@quicksilver.london",
     description="Light weight text based generic irc framework",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/javajawa/mewbot",
+    url="https://github.com/mewler/mewbot",
     project_urls={
-        "Bug Tracker": "https://github.com/javajawa/mewbot/issues",
+        "Bug Tracker": "https://github.com/mewler/mewbot/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
