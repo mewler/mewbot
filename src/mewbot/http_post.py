@@ -17,7 +17,7 @@ import dataclasses
 import logging
 import time
 
-from aiohttp import web
+from aiohttp import web  # type: ignore
 
 from mewbot.core import InputEvent, InputQueue
 from mewbot.api.v1 import IOConfig, Input, Output
