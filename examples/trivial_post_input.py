@@ -86,8 +86,7 @@ if __name__ == "__main__":
     post_ioconfig = PostIOConfig()
     post_ioconfig.inputs.append(PostInput())
 
-    test_bot = Bot()
-    test_bot.name = "TrivialWebhookExample"
+    test_bot = Bot("TrivialWebhookExample")
     test_bot.add_io_config(post_ioconfig)
     test_bot.add_behaviour(print_behavior)
     test_bot.run()

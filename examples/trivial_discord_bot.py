@@ -140,8 +140,7 @@ if __name__ == "__main__":
     post_ioconfig.inputs.append(discord_input)
     post_ioconfig.outputs.append(discord_output)
 
-    test_bot = Bot()
-    test_bot.name = "TrivialDiscordExample"
+    test_bot = Bot("TrivialDiscordExample")
     test_bot.add_io_config(post_ioconfig)
     test_bot.add_behaviour(print_behavior)
     test_bot.run()
