@@ -21,6 +21,12 @@ class ConfigBlock(TypedDict):
     properties: Dict[str, Any]
 
 
+class BehaviourConfigBlock(ConfigBlock):
+    triggers: List[ConfigBlock]
+    conditions: List[ConfigBlock]
+    actions: List[ConfigBlock]
+
+
 # noinspection PyMethodParameters
 class ComponentRegistry(abc.ABCMeta):
     registered: List[Type[Any]] = []

@@ -16,7 +16,7 @@ from mewbot.core import (
     ConditionInterface,
     ActionInterface,
 )
-from mewbot.component import ComponentRegistry, Component
+from mewbot.component import ComponentRegistry, Component, BehaviourConfigBlock
 
 
 @ComponentRegistry.register_api_version(ComponentKind.IO_CONFIG, "v1")
@@ -189,3 +189,12 @@ class Behaviour(Component):
 
         for action in self.actions:
             await action.act(event, state)
+
+    def serialise(self) -> BehaviourConfigBlock:
+        config = BehaviourConfigBlock(**super().serialise())
+
+        config["triggers"] = [x.serialise() for x in self.triggers]
+        config["conditions"] = [x.serialise() for x in self.conditions]
+        config["actions"] = [x.serialise() for x in self.actions]
+
+        return config

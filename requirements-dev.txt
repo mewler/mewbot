@@ -9,3 +9,5 @@ flake8~=4.0
 mypy>=0.940
 pylint==2.13.1
 reuse~=0.14
+
+types-PyYAML
