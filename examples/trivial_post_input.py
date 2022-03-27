@@ -14,9 +14,8 @@ from __future__ import annotations
 from typing import Set, Type, Dict, Any
 
 from mewbot.bot import Bot
-from mewbot.behaviour import Behaviour
 from mewbot.core import InputEvent, OutputEvent
-from mewbot.api.v1 import Trigger, Condition, Action
+from mewbot.api.v1 import Behaviour, Trigger, Condition, Action
 
 from mewbot.http_post import PostInput, PostIOConfig, PostInputEvent
 
@@ -75,7 +74,7 @@ if __name__ == "__main__":
 
     # - Behavior
     # Construct the print_behavior - which just prints every input event
-    print_behavior = Behaviour()
+    print_behavior = Behaviour("PrintAllEvents")
     # Triggers on all PostInput events
     print_behavior.add(TrivialTrigger())
     # Passes all incoming events

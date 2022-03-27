@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Protocol, Sequence, Set, Type, runtime_checkable, Dict, Any
+from typing import Any, Dict, List, Protocol, Sequence, Set, Type, Union, runtime_checkable
 
 import asyncio
 import enum
@@ -29,6 +29,7 @@ class ComponentKind(str, enum.Enum):
     @classmethod
     def interface(cls, value: ComponentKind) -> Type[Any]:
         _map = {
+            cls.BEHAVIOUR: BehaviourInterface,
             cls.TRIGGER: TriggerInterface,
             cls.CONDITION: ConditionInterface,
             cls.ACTION: ActionInterface,
@@ -133,11 +134,29 @@ class ActionInterface(Protocol):
         pass
 
 
+@runtime_checkable
+class BehaviourInterface(Protocol):
+    def add(
+        self, component: Union[TriggerInterface, ConditionInterface, ActionInterface]
+    ) -> None:
+        pass
+
+    def consumes_inputs(self) -> Set[Type[InputEvent]]:
+        pass
+
+    def bind_output(self, output: OutputQueue) -> None:
+        pass
+
+    async def process(self, event: InputEvent) -> None:
+        pass
+
+
 __all__ = [
     "ComponentKind",
     "IOConfigInterface",
     "InputInterface",
     "OutputInterface",
+    "BehaviourInterface",
     "TriggerInterface",
     "ConditionInterface",
     "ActionInterface",

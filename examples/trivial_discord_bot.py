@@ -13,8 +13,7 @@ from typing import Any, Dict, Set, Type
 
 from mewbot.bot import Bot
 
-from mewbot.behaviour import Behaviour
-from mewbot.api.v1 import Trigger, Condition, Action
+from mewbot.api.v1 import Behaviour, Trigger, Condition, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
 
 from mewbot.http_post import PostIOConfig
@@ -122,7 +121,7 @@ if __name__ == "__main__":
 
     # - Behavior
     # Construct the print_behavior - which just prints every input event
-    print_behavior = Behaviour()
+    print_behavior = Behaviour("ReplyToDiscord")
     # Triggers on all PostInput events
     print_behavior.add(DiscordTrivialTrigger())
     # Passes all incoming events

@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Sequence, Set, Union, Type
+
 import abc
-from typing import Set, Type, Optional, Dict, Any, Sequence
 
-from mewbot.core import InputEvent, InputQueue, OutputEvent, OutputQueue, ComponentKind
-
+from mewbot.core import (
+    InputEvent,
+    InputQueue,
+    OutputEvent,
+    OutputQueue,
+    ComponentKind,
+    TriggerInterface,
+    ConditionInterface,
+    ActionInterface,
+)
 from mewbot.component import ComponentRegistry, Component
 
 
@@ -26,7 +35,7 @@ class IOConfig(Component):
 
 
 class Input:
-    queue = Optional[InputQueue]
+    queue: Optional[InputQueue]
 
     def __init__(self) -> None:
         self.queue = None
@@ -115,3 +124,68 @@ class Action(Component):
     @abc.abstractmethod
     async def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
         pass
+
+
+@ComponentRegistry.register_api_version(ComponentKind.BEHAVIOUR, "v1")
+class Behaviour(Component):
+    name: str
+    active: bool
+
+    triggers: List[Trigger]
+    conditions: List[Condition]
+    actions: List[Action]
+
+    interests: Set[Type[InputEvent]]
+
+    def __init__(self, name: str, active: bool = True) -> None:
+        self.name = name
+        self.active = active
+
+        self.interests = set()
+        self.triggers = []
+        self.conditions = []
+        self.actions = []
+
+    # noinspection PyTypeChecker
+    def add(
+        self, component: Union[TriggerInterface, ConditionInterface, ActionInterface]
+    ) -> None:
+        if not isinstance(component, (Trigger, Condition, Action)):
+            raise TypeError(f"Component {component} is not a Trigger, Condition, or Action")
+
+        # noinspection PyUnresolvedReferences
+        interests = component.consumes_inputs()
+        interests = self.interests.intersection(interests) if self.interests else interests
+
+        if not interests:
+            raise ValueError(
+                f"Component {component} doesn't match input types {self.interests}"
+            )
+
+        self.interests = interests
+
+        if isinstance(component, Trigger):
+            self.triggers.append(component)
+        if isinstance(component, Condition):
+            self.conditions.append(component)
+        if isinstance(component, Action):
+            self.actions.append(component)
+
+    def consumes_inputs(self) -> Set[Type[InputEvent]]:
+        return self.interests
+
+    def bind_output(self, output: OutputQueue) -> None:
+        for action in self.actions:
+            action.bind(output)
+
+    async def process(self, event: InputEvent) -> None:
+        if not any(True for trigger in self.triggers if trigger.matches(event)):
+            return
+
+        if not all(True for condition in self.conditions if condition.allows(event)):
+            return
+
+        state: Dict[str, Any] = {}
+
+        for action in self.actions:
+            await action.act(event, state)

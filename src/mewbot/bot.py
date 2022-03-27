@@ -9,9 +9,9 @@ import signal
 
 from typing import Any, Dict, List, Optional, Set, Type
 
-from mewbot.behaviour import Behaviour
 from mewbot.data import DataSource
 from mewbot.core import (
+    BehaviourInterface,
     IOConfigInterface,
     InputInterface,
     InputEvent,
@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 class Bot:
     name: str  # The bot's name
     io_configs: List[IOConfigInterface]  # Connections to bot makes to other services
-    behaviours: List[Behaviour]  # All the things the bot does
+    behaviours: List[BehaviourInterface]  # All the things the bot does
     datastores: Dict[str, DataSource[Any]]  # Data sources and stores for this bot
 
     def __init__(self) -> None:
@@ -47,14 +47,14 @@ class Bot:
     def add_io_config(self, ioc: IOConfigInterface) -> None:
         self.io_configs.append(ioc)
 
-    def add_behaviour(self, behaviour: Behaviour) -> None:
+    def add_behaviour(self, behaviour: BehaviourInterface) -> None:
         self.behaviours.append(behaviour)
 
     def get_data_source(self, name: str) -> Optional[DataSource[Any]]:
         return self.datastores.get(name)
 
-    def _marshal_behaviours(self) -> Dict[Type[InputEvent], Set[Behaviour]]:
-        behaviours: Dict[Type[InputEvent], Set[Behaviour]] = {}
+    def _marshal_behaviours(self) -> Dict[Type[InputEvent], Set[BehaviourInterface]]:
+        behaviours: Dict[Type[InputEvent], Set[BehaviourInterface]] = {}
 
         for behaviour in self.behaviours:
             for event_type in behaviour.consumes_inputs():
@@ -86,11 +86,11 @@ class BotRunner:
 
     inputs: Set[InputInterface]
     outputs: Dict[Type[OutputEvent], Set[OutputInterface]] = {}
-    behaviours: Dict[Type[InputEvent], Set[Behaviour]] = {}
+    behaviours: Dict[Type[InputEvent], Set[BehaviourInterface]] = {}
 
     def __init__(
         self,
-        behaviours: Dict[Type[InputEvent], Set[Behaviour]],
+        behaviours: Dict[Type[InputEvent], Set[BehaviourInterface]],
         inputs: Set[InputInterface],
         outputs: Dict[Type[OutputEvent], Set[OutputInterface]],
     ) -> None:
@@ -136,8 +136,7 @@ class BotRunner:
         # Startup the outputs - which are contained in the behaviors
         self.logger.info("self.behaviours: %s", ",".join(map(str, self.behaviours.values())))
         for behaviour in itertools.chain(*self.behaviours.values()):
-            for action in behaviour.actions:
-                action.bind(self.output_event_queue)
+            behaviour.bind_output(self.output_event_queue)
 
         loop.create_task(self.process_input_queue())
         loop.create_task(self.process_output_queue(loop))
