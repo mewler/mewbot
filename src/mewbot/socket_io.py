@@ -1,17 +1,62 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+from typing import Optional, Sequence, Set, Type
+
 import asyncio
 import dataclasses
 import logging
-import socket
+import time
 
-from typing import Optional, Set, Type
-
-from mewbot.core import InputEvent, InputQueue
-from mewbot.api.v1 import Input
+from mewbot.core import InputEvent
+from mewbot.api.v1 import Input, IOConfig, Output
 
 
-@dataclasses.dataclass  # Needed for pycharm linting
+@dataclasses.dataclass
 class SocketInputEvent(InputEvent):
     data: bytes
+
+
+class SocketIO(IOConfig):
+    _host: str = "localhost"
+    _port: int = 0
+
+    _logger: logging.Logger
+
+    _socket: Optional[SocketInput]
+
+    def __init__(self) -> None:
+        self._logger = logging.getLogger(__name__ + "SocketInput")
+        self._socket = None
+
+    @property
+    def host(self) -> str:
+        return self._host
+
+    @host.setter
+    def host(self, host: str) -> None:
+        self._host = str(host)
+
+    @property
+    def port(self) -> int:
+        return self._port
+
+    @port.setter
+    def port(self, port: int) -> None:
+        self._port = int(port)
+
+    def _create_socket(self) -> SocketInput:
+        return SocketInput(self._host, self._port, self._logger)
+
+    def get_inputs(self) -> Sequence[Input]:
+        if not self._socket:
+            self._socket = self._create_socket()
+
+        return [self._socket]
+
+    def get_outputs(self) -> Sequence[Output]:
+        return []
 
 
 class SocketInput(Input):
@@ -20,20 +65,20 @@ class SocketInput(Input):
     so I'm leaving it in for future use.
     """
 
-    logger: logging.Logger
+    _logger: logging.Logger
 
-    host: str
-    port: int
+    _socket: Optional[asyncio.AbstractServer]
 
-    queue: Optional[InputQueue] = None
+    _host: str
+    _port: int
 
-    def __init__(self) -> None:
+    def __init__(self, host: str, port: int, logger: logging.Logger) -> None:
         super().__init__()
 
-        self.host = "localhost"
-        self.port = 15559
-
-        self.logger = logging.getLogger(__name__ + "SocketInput")
+        self._logger = logger
+        self._socket = None
+        self._host = host
+        self._port = port
 
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
@@ -41,37 +86,40 @@ class SocketInput(Input):
         Defines the set of input events this Input class can produce.
         :return:
         """
-        return {
-            SocketInputEvent,
-        }
+        return {SocketInputEvent}
 
     async def run(self) -> None:
-        self.logger.info("Binding get server to %s:%d", self.host, self.port)
+        if not self.queue:
+            self._logger.error(".run() called before queue bound")
+            return
+        if self._socket:
+            self._logger.error(".run() called with existing socket")
+            return
 
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.bind((self.host, self.port))
-        server_socket.listen(8)
-        # Needed so asyncio can release this resource
-        server_socket.setblocking(False)
+        self._logger.info("Binding get server to %s:%d", self._host, self._port)
 
-        loop = asyncio.get_event_loop()
+        self._socket = await asyncio.start_server(self.handle_client, self._host, self._port)
 
-        # Setup done - now actually run
-        while True:
-            client, _ = await loop.sock_accept(server_socket)
+    async def handle_client(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        self._logger.info("Accepting connection from %s", reader)
 
-            # Read and echo
-            chunks = []
-            while True:
-                data = client.recv(2048)
-                if not data:
-                    break
-                chunks.append(data)
-            client.sendall(b"".join(chunks))
-            client.close()
+        while not reader.at_eof():
+            data = await reader.readline()
 
             if not self.queue:
-                self.logger.warning("Received event with no attached queue")
-                continue
+                self._logger.warning("Received event with no attached queue")
+                writer.write(b"No queue attached, aborting.\n")
+                writer.write_eof()
+                writer.close()
+                return
 
             await self.queue.put(SocketInputEvent(data=data))
+            writer.write(
+                b"Accepted event of "
+                + hex(len(data)).encode("utf-8")
+                + b" bytes at "
+                + str(time.time()).encode("utf-8")
+                + b"\r\n"
+            )
