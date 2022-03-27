@@ -177,7 +177,7 @@ class BotRunner:
     async def process_output_queue(self) -> None:
         while self._running:
             try:
-                event = await asyncio.wait_for(self.input_event_queue.get(), 5)
+                event = await asyncio.wait_for(self.output_event_queue.get(), 5)
             except asyncio.exceptions.TimeoutError:
                 continue
 

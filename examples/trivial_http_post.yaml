@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: IOConfig
-module: mewbot.io.socket
-name: SocketIO
+module: mewbot.io.http
+name: HTTPServlet
 uuid: 1
 properties:
   host: localhost

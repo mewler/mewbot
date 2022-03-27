@@ -106,14 +106,16 @@ class SocketInput(Input):
         self._logger.info("Accepting connection from %s", reader)
 
         while not reader.at_eof():
-            data = await reader.readline()
+            try:
+                data = await asyncio.wait_for(reader.readline(), 15)
+            except asyncio.TimeoutError:
+                writer.write(b"Timeout waiting for message\n")
+                break
 
             if not self.queue:
                 self._logger.warning("Received event with no attached queue")
                 writer.write(b"No queue attached, aborting.\n")
-                writer.write_eof()
-                writer.close()
-                return
+                break
 
             await self.queue.put(SocketInputEvent(data=data))
             writer.write(
@@ -123,3 +125,6 @@ class SocketInput(Input):
                 + str(time.time()).encode("utf-8")
                 + b"\r\n"
             )
+
+        writer.write_eof()
+        writer.close()
