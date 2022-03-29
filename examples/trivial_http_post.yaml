@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: IOConfig
+module: mewbot.io.http
+name: HTTPServlet
+uuid: 1
+properties:
+  host: localhost
+  port: 12345
+
+---
+
+apiVersion: v1
+kind: Behaviour
+module: mewbot.api.v1
+name: Behaviour
+uuid: 1
+properties:
+  name: 'Echo Inputs'
+triggers:
+  - apiVersion: v1
+    kind: Trigger
+    module: mewbot.demo
+    name: AllEventTrigger
+    uuid: 1
+    properties: { }
+conditions: []
+actions:
+  - apiVersion: v1
+    kind: Action
+    module: mewbot.demo
+    name: PrintAction
+    uuid: 1
+    properties: { }

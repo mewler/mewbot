@@ -33,7 +33,7 @@ This is a processing pool that takes events off the queue.
 It will look at the type of the Event, and then offer it to all Behaviours
 that support that event time (so, a Behaviour which has a Matcher that
 accepts a TwitchMessage won't need to be called for web hooks or discord
-messages etc.
+messages etc.)
 
 If there are multiple bots, then they will have their own queue and processor.
 

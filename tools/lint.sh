@@ -7,9 +7,9 @@
 cd "${0%/*}/../src"
 cd ..
 
-MODULES="mewbot"
+MODULES="src examples"
 
-black src
-flake8 src
-mypy --strict --pretty src
-pylint src
+black $MODULES
+flake8 $MODULES
+mypy --strict --pretty $MODULES
+pylint $MODULES

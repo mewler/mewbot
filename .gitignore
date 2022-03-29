@@ -2,9 +2,21 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
+# Caching directories
 /.local/
 /.cache/
-/venv/
-
 __pycache__/
 .mypy_cache/
+
+# IDE and development environment
+/venv/
+/.idea/
+.tox
+
+# Build enivornment
+src/mewbot.egg-info
+/build/
+/dist/
+
+# Secrets and local configuration
+examples/TrivialDiscordBot/secrets.json
