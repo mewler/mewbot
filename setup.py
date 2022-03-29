@@ -13,7 +13,7 @@ setuptools.setup(
     version="0.0.1",
     author="Benedict Harcourt & Alex Cameron",
     author_email="mewbot@tea-cats.co.uk & mewbot@quicksilver.london",
-    description="Light weight text based generic irc framework",
+    description="Lightweight, YAML-driven, text based, generic irc Bot framework",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/mewler/mewbot",
