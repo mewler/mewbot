@@ -191,10 +191,10 @@ class Behaviour(Component):
             await action.act(event, state)
 
     def serialise(self) -> BehaviourConfigBlock:
-        config = BehaviourConfigBlock(**super().serialise())
+        config = BehaviourConfigBlock(**super().serialise())  # type: ignore
 
         config["triggers"] = [x.serialise() for x in self.triggers]
         config["conditions"] = [x.serialise() for x in self.conditions]
         config["actions"] = [x.serialise() for x in self.actions]
 
-        return config
+        return config  # type: ignore
