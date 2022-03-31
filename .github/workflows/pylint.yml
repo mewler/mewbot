@@ -68,11 +68,11 @@ jobs:
         github_token: ${{ secrets.github_token }}
 
         black:      true
-        black_dir:  src examples
+        black_dir:  src
 
         flake8:     true
-        flake8_dir: src examples
+        flake8_dir: src
 
         mypy:       true
-        mypy_dir:   src examples
+        mypy_dir:   src
         mypy_args:  --strict
