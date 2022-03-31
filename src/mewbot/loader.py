@@ -6,7 +6,7 @@ from typing import Type, Any, TextIO
 
 import importlib
 import sys
-import yaml  # type: ignore
+import yaml
 
 from mewbot.bot import Bot
 from mewbot.core import (

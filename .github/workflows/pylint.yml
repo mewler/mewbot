@@ -10,69 +10,98 @@ on:
       - mainline
   pull_request_target:
 
+env:
+  PYTHONPATH: src
+
 jobs:
+  prepare-deps:
+    name: Build and Cache dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+
+      - name: Load Depedency Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run:  pip install -r requirements-dev.txt
+
   py-lint:
     name: Lint Python code
     runs-on: ubuntu-latest
 
+    needs: prepare-deps
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Setup Python 3.9
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.9
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
 
-    - name: Load Depedency Cache
-      id: cache
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-        restore-keys: ${{ runner.os }}-pip-
+      - name: Load Depedency Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
 
-    - name: Install dependencies
-      run:  pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run:  pip install -r requirements-dev.txt
 
-    - name: Run PyLint
-      run: pylint src | python .github/workflows/pylint_to_gh_action.py || true
+      - name: Run PyLint
+        run: pylint src examples | python .github/workflows/pylint_to_gh_action.py
+
+      - name: Sneaky mypy test
+        run: mypy --strict .
 
   lint:
     name: Run Linters
     runs-on: ubuntu-latest
 
+    needs: prepare-deps
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Setup Python 3.9
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.9
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
 
-    - name: Load Depedency Cache
-      id: cache
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-        restore-keys: ${{ runner.os }}-pip-
+      - name: Load Depedency Cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
 
-    - name: Install dependencies
-      run:  pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run:  pip install -r requirements-dev.txt
 
-    - name: Run Linters
-      uses: samuelmeuli/lint-action@v1
-      with:
-        github_token: ${{ secrets.github_token }}
+      - name: Run Linters
+        uses: samuelmeuli/lint-action@v1
+        with:
+          github_token: ${{ secrets.github_token }}
 
-        black:      true
-        black_dir:  src examples
-
-        flake8:     true
-        flake8_dir: src examples
-
-        mypy:       true
-        mypy_dir:   src examples
-        mypy_args:  --strict
+          black:     true
+          flake8:    true
+          mypy:      true
+          mypy_args: --strict
