@@ -67,9 +67,6 @@ jobs:
       - name: Run PyLint
         run: pylint src examples | python .github/workflows/pylint_to_gh_action.py
 
-      - name: Sneaky mypy test
-        run: mypy --strict .
-
   lint:
     name: Run Linters
     runs-on: ubuntu-latest
