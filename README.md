@@ -26,6 +26,8 @@ minimal coding experience.
 | `mewbot-runner`           | `mewbot.loader`, `mewbot.bot`       | Tools to load a bot, and run that bot.                                                                                                     |
 | `mewbot-[discord/twitch]` | `mewbot.io.[discord/twitch]`        | The bindings to connect MewBot to a given service.                                                                                         |
 
+![module dependency graph](./mewbot.svg)
+
 ### Development
 
 Contributions to the project are made via GitHub pull requests, which will
