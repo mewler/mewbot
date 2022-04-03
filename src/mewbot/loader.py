@@ -56,18 +56,18 @@ def load_behaviour(config: BehaviourConfigBlock) -> BehaviourInterface:
 
     assert isinstance(behaviour, BehaviourInterface)
 
-    for trigger_defintion in config["triggers"]:
-        trigger = load_component(trigger_defintion)
+    for trigger_definition in config["triggers"]:
+        trigger = load_component(trigger_definition)
         assert isinstance(trigger, TriggerInterface)
         behaviour.add(trigger)
 
-    for condition_defintion in config["conditions"]:
-        condition = load_component(condition_defintion)
+    for condition_definition in config["conditions"]:
+        condition = load_component(condition_definition)
         assert isinstance(condition, ConditionInterface)
         behaviour.add(condition)
 
-    for action_defintion in config["actions"]:
-        action = load_component(action_defintion)
+    for action_definition in config["actions"]:
+        action = load_component(action_definition)
         assert isinstance(action, ActionInterface)
         behaviour.add(action)
 
