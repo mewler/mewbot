@@ -151,9 +151,7 @@ class DesktopNotificationOutputEngine:
     def notify(self, title: str, text: str) -> bool:
         """
         Preform the actual notification task using the internal setup.
-        """
-        """
-        Ideally not live patching externally accessible functions.
+        Means we can avoid live patching externally accessible functions.
         """
         if not self._enabled:
             return False
@@ -177,7 +175,11 @@ class DesktopNotificationOutputEngine:
     def enabled(self):
         return self._enabled
 
-    def _do_windows_setup(self):
+    def _do_windows_setup(self) -> None:
+        """
+        Determine if we can notify and disable self if cannot
+        """
+
         try:
             from win10toast import ToastNotifier  # type: ignore
         except ImportError:
@@ -185,6 +187,7 @@ class DesktopNotificationOutputEngine:
                 "Cannot enable - chosen method requires win10toast and it's not installed"
             )
             self.disable()
+            return
 
         setattr(self, "_notify", self._windows_toast_method)
         self._enabled = True
@@ -203,6 +206,7 @@ class DesktopNotificationOutputEngine:
             return False
 
     def _linux_notify2_method(self):
+        # notify2 uses the python dbus bindings - which might well be needed for other things later
         # I have not - yet - managed to get a working recipe for this on my dev box
         ...
 
