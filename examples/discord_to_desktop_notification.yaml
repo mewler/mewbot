@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: IOConfig
+module: mewbot.io.discord
+name: DiscordIO
+uuid: 1
+properties:
+  token: "[token goes here]"
+
+---
+
+apiVersion: v1
+kind: IOConfig
+module: mewbot.io.desktop_notification
+name: DesktopNotificationIO
+uuid: 2
+properties:
+  token: "[should-not-be_needed]"
+
+---
+
+apiVersion: v1
+kind: Behaviour
+module: mewbot.api.v1
+name: Behaviour
+uuid: 1
+properties:
+  name: 'Echo Inputs'
+triggers:
+  - apiVersion: v1
+    kind: Trigger
+    module: examples.discord_to_desktop_notification
+    name: DiscordTextCommandTrigger
+    uuid: 1
+    properties:
+      command: "!hello"
+conditions: []
+actions:
+  - apiVersion: v1
+    kind: Action
+    module: examples.discord_to_desktop_notification
+    name: DiscordMessageToNotificationAction
+    uuid: 1
+    properties:
+      message: "world"
