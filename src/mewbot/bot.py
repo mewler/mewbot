@@ -63,9 +63,11 @@ class Bot:
         return behaviours
 
     def _marshal_inputs(self) -> Set[InputInterface]:
-        inputs = set(
-            *itertools.chain(connection.get_inputs() for connection in self._io_configs)
-        )
+        inputs = set()
+
+        for connection in self._io_configs:
+            for input in connection.get_inputs():
+                inputs.add(input)
 
         return inputs
 
@@ -130,8 +132,16 @@ class BotRunner:
         input_tasks = self.setup_tasks(loop)
 
         # Handle correctly terminating the loop
-        loop.add_signal_handler(signal.SIGINT, stop)
-        loop.add_signal_handler(signal.SIGTERM, stop)
+        try:
+            loop.add_signal_handler(signal.SIGINT, stop)
+        except NotImplementedError:
+            # We're probably running on windows, where this is not an option
+            pass
+        try:
+            loop.add_signal_handler(signal.SIGTERM, stop)
+        except NotImplementedError:
+            # We're probably running on windows, where this is not an option
+            pass
 
         try:
             loop.run_forever()
