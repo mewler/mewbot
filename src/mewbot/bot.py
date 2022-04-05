@@ -147,7 +147,16 @@ class BotRunner:
             loop.run_until_complete(input_task)
             loop.run_until_complete(output_task)
 
-    def add_signal_handlers(self, loop: asyncio.AbstractEventLoop, stop: Callable):
+    @staticmethod
+    def add_signal_handlers(
+        loop: asyncio.AbstractEventLoop,
+        stop: Callable[
+            [
+                Optional[Any],
+            ],
+            None,
+        ],
+    ) -> None:
         try:
             loop.add_signal_handler(signal.SIGINT, stop)
         except NotImplementedError:

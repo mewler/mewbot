@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Set, Sequence, Type
+from typing import Optional, Set, Sequence, Type, Any
 
 import dataclasses
 import logging
@@ -32,9 +32,11 @@ class DesktopNotificationIO(IOConfig):
     _input: None
     _output: Optional[DesktopNotificationOutput] = None
 
-    def __init__(self, token) -> None:
+    def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         self._logger = logging.getLogger(__name__ + "DesktopNotificationIO")
-        self._socket = None
+        # Not entirely sure why, but empty properties in the yaml errors
+        self._logger.info(f"DesktopNotificationIO received args - {args}")
+        self._logger.info(f"DesktopNotificationIO received kwargs - {kwargs}")
 
     def get_inputs(self) -> Sequence[Input]:
 
@@ -52,7 +54,7 @@ class DesktopNotificationOutput(Output):
     _engine: DesktopNotificationOutputEngine
     _logger: logging.Logger
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         super().__init__(*args, **kwargs)
 
         self._logger = logging.getLogger(__name__ + "DesktopNotificationOutput")
@@ -166,7 +168,7 @@ class DesktopNotificationOutputEngine:
         )
         return False
 
-    def disable(self):
+    def disable(self) -> None:
         """
         Disable the notification system.
         :return:
@@ -174,7 +176,7 @@ class DesktopNotificationOutputEngine:
         self._enabled = False
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         return self._enabled
 
     def _do_windows_setup(self) -> None:
@@ -208,7 +210,7 @@ class DesktopNotificationOutputEngine:
             self._logger.info(f"desktop notification failed with {status}")
             return False
 
-    def _linux_notify2_method(self):
+    def _linux_notify2_method(self, title: str, text: str) -> bool:
         # notify2 uses the python dbus bindings - which might well be needed for other things later
         # I have not - yet - managed to get a working recipe for this on my dev box
         ...
