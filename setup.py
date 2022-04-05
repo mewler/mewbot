@@ -26,9 +26,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     extras_require={
-        ':sys_platform == "win32"': [
-            'win10toast~=0.9'
-        ], },
+        ':sys_platform == "win32"': ["win10toast~=0.9"],
+    },
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.8",  # Might be relaxed later
