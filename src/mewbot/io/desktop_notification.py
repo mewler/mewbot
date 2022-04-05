@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Set, Sequence, Type, Callable
+from typing import Optional, Set, Sequence, Type
 
 import dataclasses
 import logging
@@ -12,8 +12,8 @@ import subprocess
 from mewbot.core import OutputEvent
 from mewbot.api.v1 import IOConfig, Input, Output
 
-# Input for this class is theoretically possible and would be desirable - would allow mewbot to trigger on arbitary
-# desktop notifications.
+# Input for this class is theoretically possible and would be desirable - would allow mewbot to
+# trigger on an arbitrary desktop notifications.
 # Development ongoing
 
 
@@ -105,8 +105,10 @@ class DesktopNotificationOutputEngine:
         self._platform_str = sys.platform
         self._logger.info(f"We are detected as running on {self._platform_str}")
 
-        # Could use "in" or string normalisation - but I want it to fail noisily and log the error so, hopefully, the
-        # user will tell us and I can check to see if anything creative is required.
+        # Could use "in" or string normalisation - but I want it to fail noisily and log the error
+        # if I have made any incorrect assumptions.
+        # So, hopefully, the user will tell us and I can check to see if anything creative
+        # is required.
         # silent failure of desktop notifications is not desired. Noisy failure is.
 
         self._enabled = False
@@ -188,14 +190,15 @@ class DesktopNotificationOutputEngine:
             )
             self.disable()
             return
+        assert ToastNotifier is not None
 
         setattr(self, "_notify", self._windows_toast_method)
         self._enabled = True
 
     def _linux_notify_send_method(self, title: str, text: str) -> bool:
         """
-        Use notify-send to attempt to notify the user. This should work on (most) systems, but does not support callback
-        or use dbus. _linux_notify2_method uses notify2 which wraps dbus.
+        Use notify-send to attempt to notify the user. This should work on (most) systems, but does
+        not support callback or use dbus. _linux_notify2_method uses notify2 which wraps dbus.
         :return:
         """
         status = subprocess.call(["notify-send", title, text])
@@ -213,9 +216,10 @@ class DesktopNotificationOutputEngine:
     def _windows_toast_method(self, title: str, text: str) -> bool:
         """
         Uses the win10toast library to send "toast" notifications.
-        Except it turns out it doesn't. See the answers in https://stackoverflow.com/questions/64230231/
-        In fact, it abuses the legacy win xp notification system - so no feedback. For the moment focus on getting
-        notifications to display at all.
+        Except it turns out it doesn't. See the answers in
+        https://stackoverflow.com/questions/64230231/
+        In fact, it abuses the legacy win xp notification system - so no feedback.
+        For the moment focus on getting notifications to display at all.
         :param title:
         :param text:
         :return:
@@ -230,6 +234,7 @@ class DesktopNotificationOutputEngine:
 
         toaster = ToastNotifier()
 
-        # Notification will be shown in own thread - so (hopefully) to allow yield back to the main loop
+        # Notification will be shown in own thread - so (hopefully) to allow yield back to
+        # the main loop
         toaster.show_toast(title, text, duration=5, threaded=True)
         return True

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Optional, Set, Type, Callable
 
 import asyncio
 import itertools
@@ -132,16 +132,7 @@ class BotRunner:
         input_tasks = self.setup_tasks(loop)
 
         # Handle correctly terminating the loop
-        try:
-            loop.add_signal_handler(signal.SIGINT, stop)
-        except NotImplementedError:
-            # We're probably running on windows, where this is not an option
-            pass
-        try:
-            loop.add_signal_handler(signal.SIGTERM, stop)
-        except NotImplementedError:
-            # We're probably running on windows, where this is not an option
-            pass
+        self.add_signal_handlers(loop, stop)
 
         try:
             loop.run_forever()
@@ -155,6 +146,18 @@ class BotRunner:
             # Finish processing anything already in the queues.
             loop.run_until_complete(input_task)
             loop.run_until_complete(output_task)
+
+    def add_signal_handlers(self, loop: asyncio.AbstractEventLoop, stop: Callable):
+        try:
+            loop.add_signal_handler(signal.SIGINT, stop)
+        except NotImplementedError:
+            # We're probably running on windows, where this is not an option
+            pass
+        try:
+            loop.add_signal_handler(signal.SIGTERM, stop)
+        except NotImplementedError:
+            # We're probably running on windows, where this is not an option
+            pass
 
     def setup_tasks(self, loop: asyncio.AbstractEventLoop) -> List[asyncio.Task[None]]:
         input_tasks: List[asyncio.Task[None]] = []
