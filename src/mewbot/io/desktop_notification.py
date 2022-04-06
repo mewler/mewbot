@@ -173,7 +173,7 @@ class DesktopNotificationOutputEngine:
         caller = {
             "windows": self._windows_toast_method,
             "linux": self._linux_notify_send_method,
-            "linux_notify": self._linux_notify2_method
+            "linux_notify": self._linux_notify2_method,
         }.get(self._detected_os)
 
         if not caller:
