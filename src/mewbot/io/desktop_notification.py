@@ -88,7 +88,9 @@ class DesktopNotificationOutput(Output):
 
 class DesktopNotificationOutputEngine:
     """
-    Contains the dubious and concerning logic required to make output work on all target systems.
+    Cross-Platform notification shim/engine.
+
+    Works by patching the `_notify` function at init time to contain the correct implementation.
     """
 
     _logger: logging.Logger
@@ -105,7 +107,8 @@ class DesktopNotificationOutputEngine:
         # Note-to-self: Need to test to see if we are headless and fallback if we are
 
         self._platform_str = sys.platform
-        self._logger.info(f"We are detected as running on {self._platform_str}")
+        # Not using an f-string because we want lazy evaluation if possible
+        self._logger.info("We are detected as running on %s", self._platform_str)
 
         # Could use "in" or string normalisation - but I want it to fail noisily and log the error
         # if I have made any incorrect assumptions.
@@ -114,43 +117,50 @@ class DesktopNotificationOutputEngine:
         # silent failure of desktop notifications is not desired. Noisy failure is.
 
         self._enabled = False
-        if self._platform_str == "win32" or self._platform_str == "win64":
+        if self._platform_str == "win32":
             self._detected_os = "windows"
             self._do_windows_setup()
 
-        elif self._platform_str == "linux":
+        elif "linux" in self._platform_str:
+
             if self._platform_str == "linux2":
                 self._logger.warning(
-                    f"You seem to be running python below 3.3, "
-                    f"or python behavior has changed - sys.platform = {self._platform_str}"
+                    "You seem to be running python below 3.3, "
+                    "or python behavior has changed - sys.platform = %s",
+                    self._platform_str,
                 )
 
             self._detected_os = "linux"
-            setattr(self, "_notify", self._linux_notify_send_method)
+            setattr(self, "_notify", self._linux_notify_send_method)  # Need to fool mypy
 
         elif self._platform_str == "darwin":
             self._detected_os = "macos"
             self._enabled = False
 
         elif "freebsd" in self._platform_str or "dragonfly" in self._platform_str:
-            self._logger.warning(
-                f"untested configuration - {self._platform_str} - attempting freebsd like behavior"
-            )
-            self._detected_os = "freebsd"
+            self._detected_os = "freebsd"  # freebsd like behavior should work
             self._enabled = False
 
         elif "haiku" in self._platform_str:
-            self._logger.warning(
-                f"untested configuration - {self._platform_str} - attempting haiku like behavior"
-            )
             self._detected_os = "haiku"
             self._enabled = False
 
         else:
             self._logger.warning(
-                f"Unsupported configuration {self._platform_str} - cannot enable"
+                f"Unexpected and unsupported configuration %s - cannot enable",
+                self._platform_str,
             )
+            self._detected_os = "unknown"
             self._enabled = False
+
+        if self._enabled:
+            self._logger.info(
+                "DesktopNotificationOutputEngine enabled - %s", self._detected_os
+            )
+        else:
+            self._logger.warning(
+                "DesktopNotificationOutputEngine failed to enable - %s", self._detected_os
+            )
 
     def notify(self, title: str, text: str) -> bool:
         """
@@ -159,12 +169,22 @@ class DesktopNotificationOutputEngine:
         """
         if not self._enabled:
             return False
-        return self._notify(title, text)
+
+        caller = {
+            "windows": self._windows_toast_method,
+            "linux": self._linux_notify_send_method,
+        }.get(self._detected_os)
+
+        if not caller:
+            self._logger.warning("No notification method supported for %s", self._detected_os)
+            return False
+
+        return caller(title, text)
 
     def _notify(self, title: str, text: str) -> bool:
         self._logger.warning(
             f"{self._notify} should never be called directly - "
-            f"should have been live replaced with the true method - f{title} - f{text}"
+            f"should have been live replaced with the true method - {title} - {text}"
         )
         return False
 
