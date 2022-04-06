@@ -13,8 +13,7 @@ kind: IOConfig
 module: mewbot.io.desktop_notification
 name: DesktopNotificationIO
 uuid: 2
-properties:
-  token: "[should-not-be_needed]"
+properties: {}
 
 ---
 
