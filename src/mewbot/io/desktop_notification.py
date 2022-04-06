@@ -35,8 +35,8 @@ class DesktopNotificationIO(IOConfig):
     def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         self._logger = logging.getLogger(__name__ + "DesktopNotificationIO")
         # Not entirely sure why, but empty properties in the yaml errors
-        self._logger.info(f"DesktopNotificationIO received args - {args}")
-        self._logger.info(f"DesktopNotificationIO received kwargs - {kwargs}")
+        self._logger.info("DesktopNotificationIO received args - %s", args)
+        self._logger.info("DesktopNotificationIO received kwargs - %s", kwargs)
 
     def get_inputs(self) -> Sequence[Input]:
 
@@ -78,7 +78,7 @@ class DesktopNotificationOutput(Output):
         :param event:
         :return:
         """
-        self._logger.info(f"output triggering with {event}")
+        self._logger.info("output triggering with %s", event)
 
         if not isinstance(event, DesktopNotificationOutputEvent):
             return False
@@ -131,7 +131,7 @@ class DesktopNotificationOutputEngine:
                 )
 
             self._detected_os = "linux"
-            setattr(self, "_notify", self._linux_notify_send_method)  # Need to fool mypy
+            # When notify2 is implemented, the _detected_os string for it will be linux_notify
 
         elif self._platform_str == "darwin":
             self._detected_os = "macos"
@@ -147,7 +147,7 @@ class DesktopNotificationOutputEngine:
 
         else:
             self._logger.warning(
-                f"Unexpected and unsupported configuration %s - cannot enable",
+                "Unexpected and unsupported configuration %s - cannot enable",
                 self._platform_str,
             )
             self._detected_os = "unknown"
@@ -173,6 +173,7 @@ class DesktopNotificationOutputEngine:
         caller = {
             "windows": self._windows_toast_method,
             "linux": self._linux_notify_send_method,
+            "linux_notify": self._linux_notify2_method
         }.get(self._detected_os)
 
         if not caller:
@@ -180,13 +181,6 @@ class DesktopNotificationOutputEngine:
             return False
 
         return caller(title, text)
-
-    def _notify(self, title: str, text: str) -> bool:
-        self._logger.warning(
-            f"{self._notify} should never be called directly - "
-            f"should have been live replaced with the true method - {title} - {text}"
-        )
-        return False
 
     def disable(self) -> None:
         """
@@ -226,14 +220,15 @@ class DesktopNotificationOutputEngine:
         status = subprocess.call(["notify-send", title, text])
         if status == 0:
             return True
-        else:
-            self._logger.info(f"desktop notification failed with {status}")
-            return False
+
+        self._logger.info("desktop notification failed with %s", status)
+        return False
 
     def _linux_notify2_method(self, title: str, text: str) -> bool:
         # notify2 uses the python dbus bindings - which might well be needed for other things later
         # I have not - yet - managed to get a working recipe for this on my dev box
-        ...
+        self._logger.warning("Cannot notify - notify2 not working - %s - %s", title, text)
+        return False
 
     def _windows_toast_method(self, title: str, text: str) -> bool:
         """
