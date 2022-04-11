@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2021 Benedict Harcourt <ben.harcourt@harcourtprogramming.co.uk>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+
+name: PR Test
+
+on:
+  pull_request_target:
+
+env:
+  PYTHONPATH: src
+
+jobs:
+  pr-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Display env
+        run: env
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Show Git Info
+        run:  git log HEAD~3..HEAD
+
+      - name: Show test file contents
+        run:  cat test.txt
