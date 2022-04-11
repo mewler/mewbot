@@ -2,9 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-name: Linting
+name: Linting (cross-fork merge result)
 
-on: [push]
+on:
+  pull_request:
+    - mainline
+
+env:
+  PYTHONPATH: src
 
 jobs:
   prepare-deps:
@@ -31,8 +36,12 @@ jobs:
       - name: Install dependencies
         run:  pip install -r requirements-dev.txt
 
-  py-lint:
-    name: Lint Python code
+  lint:
+    strategy:
+      matrix:
+        tool: [black, flake8, mypy, pylint]
+
+    name: Lint Python code with ${{ matrix.tool }}
     runs-on: ubuntu-latest
 
     needs: prepare-deps
@@ -58,40 +67,4 @@ jobs:
         run:  pip install -r requirements-dev.txt
 
       - name: Run PyLint
-        run: pylint src examples | python .github/workflows/pylint_to_gh_action.py
-
-  lint:
-    name: Run Linters
-    runs-on: ubuntu-latest
-
-    needs: prepare-deps
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Python 3.9
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.9
-
-      - name: Load Depedency Cache
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run:  pip install -r requirements-dev.txt
-
-      - name: Run Linters
-        uses: samuelmeuli/lint-action@v1
-        with:
-          github_token: ${{ secrets.github_token }}
-
-          black:     true
-          flake8:    true
-          mypy:      true
-          mypy_args: --strict
+        run: ${{ matrix.tool }} .
