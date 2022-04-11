@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Show Git Info
-        run:  git log HEAD~3..HEAD
+        run:  git merge ${{ env.GITHUB_HEAD_REF }}
 
       - name: Show test file contents
         run:  cat test.txt
