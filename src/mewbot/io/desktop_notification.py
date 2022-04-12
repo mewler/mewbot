@@ -199,7 +199,7 @@ class DesktopNotificationOutputEngine:
         """
 
         try:
-            from win10toast import (  # pylint: disable=import-outside-toplevel # type: ignore
+            from win10toast import (  # type: ignore # pylint: disable=import-outside-toplevel
                 ToastNotifier,
             )
         except ImportError:

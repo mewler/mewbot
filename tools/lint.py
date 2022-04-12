@@ -10,11 +10,15 @@ import subprocess
 import sys
 
 
+Level = Literal["error", "warning", "notice"]
+LEVELS: Set[Level] = {"notice", "warning", "error"}
+
+
 @dataclasses.dataclass
 class Annotation:
     """Schema for a github action annotation, representing an error"""
 
-    level: Literal["error", "warning", "notice"]
+    level: Level
     file: str
     line: int
     col: int
@@ -112,12 +116,15 @@ class LintToolchain:
                 continue
 
             try:
-                file, line_no, level, error = line.strip().split(":", 3)
-                if level.strip() == "note":
-                    level = "notice"
-                level = level if level in ["notice", "warning", "error"] else "error"
+                file, line_no, _level, error = line.strip().split(":", 3)
+                _level = _level.strip()
 
-                yield Annotation(level.strip(), file, int(line_no), 1, "", error.strip())
+                if _level == "note":
+                    _level = "notice"
+
+                level: Level = _level if _level in LEVELS else "error"
+
+                yield Annotation(level, file, int(line_no), 1, "", error.strip())
             except ValueError:
                 pass
 
@@ -145,10 +152,10 @@ def lint_black_errors(
         if not error:
             continue
 
-        level, header, message, line, char, info = error.split(":", 5)
+        _level, header, message, line, char, info = error.split(":", 5)
         header, _, file = header.rpartition(" ")
 
-        level = level if level in ["notice", "warning", "error"] else "error"
+        level: Level = _level.strip() if _level.strip() in LEVELS else "error"
 
         yield Annotation(level, file, int(line), int(char), message.strip(), info.strip())
 
