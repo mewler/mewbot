@@ -4,7 +4,7 @@
 
 name: Linting (cross-fork merge result)
 
-on: [pull_request]
+on: [push, pull_request]
 
 jobs:
   lint:
@@ -13,20 +13,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Python 3.9
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v3
         with:
           python-version: 3.9
-
-      - name: Load Depedency Cache
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements*.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
       - name: Install dependencies
         run:  pip install -r requirements-dev.txt
