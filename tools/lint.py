@@ -160,8 +160,10 @@ if __name__ == "__main__":
 
     if is_ci:
         print("::group::Annotations")
-        print(sorted(issues))
+        for issue in sorted(issues):
+            print(issue)
         print("::endgroup::")
+
         print("Total Issues:", len(issues))
 
     sys.exit(not linter.success or len(issues) > 0)
