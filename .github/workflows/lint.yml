@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-2-Clause
 
-name: Linting (cross-fork merge result)
+name: Linting
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   lint:
