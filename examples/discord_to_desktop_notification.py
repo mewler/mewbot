@@ -79,6 +79,6 @@ class DiscordMessageToNotificationAction(Action):
             title="Someone said hello!",
             text=self._message,
         )
-        self._logger.info(f"Triggering DesktopNotification {test_event}")
+        self._logger.info("Triggering DesktopNotification %s", test_event)
 
         await self.send(test_event)

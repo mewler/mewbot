@@ -6,15 +6,12 @@ from mewbot.core import InputEvent, OutputEvent
 from mewbot.api.v1 import Condition, Trigger, Action
 
 
-
-
-
 class Foo(Condition):
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
         return set()
 
-    _channel: str       :fds:Fdsf
+    _channel: str
 
     @property
     def channel(self) -> str:
@@ -33,7 +30,7 @@ class Foo(Condition):
 
 class AllEventTrigger(Trigger):
     """
- ffdkjsfkjdslfkjdskfldsjfkdsl;kjfdkslfjdskl;fdsjl    Nothing fancy - just fires whenever there is an PostInputEvent.
+    Nothing fancy - just fires whenever there is an PostInputEvent.
     Will be used in the PrintBehavior.
     """
 

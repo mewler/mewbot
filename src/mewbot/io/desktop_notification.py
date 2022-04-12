@@ -185,7 +185,7 @@ class DesktopNotificationOutputEngine:
     def disable(self) -> None:
         """
         Disable the notification system.
-        :return:
+        :return:Fill
         """
         self._enabled = False
 
@@ -199,7 +199,9 @@ class DesktopNotificationOutputEngine:
         """
 
         try:
-            from win10toast import ToastNotifier  # type: ignore
+            from win10toast import (  # pylint: disable=import-outside-toplevel # type: ignore
+                ToastNotifier,
+            )
         except ImportError:
             self._logger.info(
                 "Cannot enable - chosen method requires win10toast and it's not installed"
@@ -242,7 +244,7 @@ class DesktopNotificationOutputEngine:
         :return:
         """
         try:
-            from win10toast import ToastNotifier
+            from win10toast import ToastNotifier  # pylint: disable=import-outside-toplevel
         except ImportError:
             self._logger.info(
                 "Cannot display - chosen method requires win10toast and it's not installed"
