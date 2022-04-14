@@ -6,6 +6,10 @@ SPDX-License-Identifier: BSD-2-Clause
 
 # MewBot
 
+[![Linting](https://github.com/mewler/mewbot/actions/workflows/pylint.yml/badge.svg)](https://github.com/mewler/mewbot/actions/workflows/pylint.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mewler_mewbot&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mewler_mewbot)
+
+
 MewBot is an automation framework intended to simplify building cross-platform
 text/chat-bots.
 The design is intended to be modular with configuration separated from code,

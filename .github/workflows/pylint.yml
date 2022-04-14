@@ -4,7 +4,14 @@
 
 name: Linting
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - mainline
+  pull_request:
+  release:
+    types:
+      - published
 
 jobs:
   lint:
