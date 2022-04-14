@@ -64,4 +64,4 @@ python3 -m examples examples/trivial_socket.yaml
 
 > :warning: We currently have no test framework (see #11)
 
-You can run the linters via the convenience script `tools/lint.sh`.
+You can run the linters via the convenience script `tools/lint.py`.

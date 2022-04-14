@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# pylint: disable=duplicate-code
+# this is an example - duplication for emphasis is desirable
 
 from __future__ import annotations
 

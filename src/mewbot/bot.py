@@ -66,8 +66,8 @@ class Bot:
         inputs = set()
 
         for connection in self._io_configs:
-            for input in connection.get_inputs():
-                inputs.add(input)
+            for con_input in connection.get_inputs():
+                inputs.add(con_input)
 
         return inputs
 

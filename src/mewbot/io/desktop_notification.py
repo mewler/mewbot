@@ -12,6 +12,11 @@ import subprocess
 from mewbot.core import OutputEvent
 from mewbot.api.v1 import IOConfig, Input, Output
 
+try:
+    from win10toast import ToastNotifier  # type: ignore
+except ImportError:
+    ToastNotifier = None
+
 # Input for this class is theoretically possible and would be desirable - would allow mewbot to
 # trigger on an arbitrary desktop notifications.
 # Development ongoing
@@ -197,10 +202,7 @@ class DesktopNotificationOutputEngine:
         """
         Determine if we can notify and disable self if cannot
         """
-
-        try:
-            from win10toast import ToastNotifier  # type: ignore
-        except ImportError:
+        if ToastNotifier is None:
             self._logger.info(
                 "Cannot enable - chosen method requires win10toast and it's not installed"
             )
@@ -241,9 +243,7 @@ class DesktopNotificationOutputEngine:
         :param text:
         :return:
         """
-        try:
-            from win10toast import ToastNotifier
-        except ImportError:
+        if ToastNotifier is None:
             self._logger.info(
                 "Cannot display - chosen method requires win10toast and it's not installed"
             )
