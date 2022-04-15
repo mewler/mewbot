@@ -4,6 +4,9 @@ Contributions to this project are welcome, whether minor updates to documentatio
 This document outlines the technical and procedural requirements for your work to be included.
 All contributions, in any form, must also confirm with the [code of conduct](CODE_OF_CONDUCT.md).
 
+You can see all contributors, past and present, in the [contributors list](CONTRIBUTING.md).
+This list is managed using the [AllContributors bot](https://allcontributors.org/docs/en/bot/overview).
+
 > :warning: This document is a living document, and will adapt based on the project's needs.
 > If some part of this document creates a hindrance, raise an issue explaining the problem.
 
