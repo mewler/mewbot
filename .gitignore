@@ -12,6 +12,8 @@ __pycache__/
 /venv/
 /.idea/
 .tox
+.project
+.pydevproject
 
 # Build enivornment
 src/mewbot.egg-info
@@ -20,3 +22,7 @@ src/mewbot.egg-info
 
 # Secrets and local configuration
 examples/TrivialDiscordBot/secrets.json
+
+# Coverage artefacts
+.coverage
+/.coverage_html/

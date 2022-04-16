@@ -32,6 +32,7 @@ minimal coding experience.
 | `mewbot-dev`              | `mewbot.component`, `mewbot.api.v1` | Development libraries + component registry system. This is the package that all 3rd party libraries should depend on for their interfaces. |
 | `mewbot-runner`           | `mewbot.loader`, `mewbot.bot`       | Tools to load a bot, and run that bot.                                                                                                     |
 | `mewbot-[discord/twitch]` | `mewbot.io.[discord/twitch]`        | The bindings to connect MewBot to a given service.                                                                                         |
+| `mewbot-tests`            | `mewbot.tests`                      | MewBot test cases for pytest.                                                                                                              |
 
 ![module dependency graph](./mewbot.svg)
 
@@ -69,6 +70,8 @@ python3 -m examples examples/trivial_socket.yaml
 
 #### Running the tests and linters
 
-> :warning: We currently have no test framework (see #11)
-
 You can run the linters via the convenience script `tools/lint.py`.
+
+You can run the test framework using the convenience script `tools/test.py` (via `python -m tools.test`). This outputs html details of code coverage in `.coverage_html`.
+
+> :warning: However, as of this commit, no tests exist.

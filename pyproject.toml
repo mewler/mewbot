@@ -25,7 +25,11 @@ disable=[
 
 branch=true
 relative_files=true
-source=["src"]
+source=[
+	"src",
+	"examples"
+]
+dynamic_context = "test_function"
 
 [tool.coverage.report]
 
