@@ -1,4 +1,4 @@
-# Contributuing
+# Contributing
 
 Contributions to this project are welcome, whether minor updates to documentation or entirely new features.
 This document outlines the technical and procedural requirements for your work to be included.
@@ -7,31 +7,45 @@ All contributions, in any form, must also confirm with the [code of conduct](COD
 You can see all contributors, past and present, in the [contributors list](CONTRIBUTING.md).
 This list is managed using the [AllContributors bot](https://allcontributors.org/docs/en/bot/overview).
 
-> :warning: This document is a living document, and will adapt based on the project's needs.
+> :information_source: This document is a living document, and will adapt based on the project's needs.
 > If some part of this document creates a hindrance, raise an issue explaining the problem.
 
+<!-- This section is pending the modularisation work in issue #13
 ## Scope: What Lives in this Repository?
 
-MewBot's core design includes the tenant of modularity.
-The core repo will only accept features and components that do not add additional dependencies.
+MewBot's core provides simple interfaces for developing bot components and a system for loading and running them.
+It attempts to do so with a minimum of third party dependencies.
+Changes and additions here look to improve the framework of MewBot for developers and runners.
+
+Adding new core functionality that requires additional dependencies needs special consideration,
+as it increases both the security footprint and compatibility issues within the project.
 
 When building new components, whether they are input/output modules or utilities for use in behaviours,
 consider if they could be a stand-alone repository and package.
 The MewBot team is happy to help set up these repositories in the GitHub group.
+-->
 
 ## Projects and Issues: What Needs Doing?
 
 Issues are a fantastic way of keeping track of what work is needed and who is planning to do it.
 You can find all the current initiatives in the projects tab; these show the current areas of focus.
-If you are looking for a way to contribute to the project, this is a great place to start.
 
-Issues are also a place to plan how to approach future work.
-Openly discussing ideas allows us to find places where multiple people are looking at
-similar problems and ensure that we don't have different solutions.
+If you are looking for a way to contribute to MewBot, this is a great place to start.
+You can either find an existing issue to work on or bring your ideas to the table.
+Everyone is welcome to open issues with concerns, thoughts, or suggestions;
+make sure to check existing entries for relevant information and plans first.
+The team may merge issues as we work towards a common solution, or issues may be closed
+if they do not reflect the overall project vision.
 
-When starting on a piece of work, check if there is a current issue you can assign to yourself.
-For more extensive changes, it is encouraged that you create it if one does not already exist.
-If another user has the issue assigned, coordinate your work with them.
+Open issues are treated as a collaborative planning space and build an understanding of planned changes.
+Discussion allows us to find overlap in both problems and solutions and ensure that any
+changes will combine with other ongoing work.
+
+If you want to start on a piece of work:
+  find or create an issue describing the work;
+  assign it to yourself; and get started.
+If another user has the assignment, reach out to them and see if you can help;
+coordination is the key to success in open source development.
 
 ## Code Style
 
@@ -64,8 +78,7 @@ Instead, create an issue to track the required change.
 
 <!--
 ## Testing
-This section is to be drafted by whoever solves the issue relating to testing.
-
+This section is to be drafted as part of #11 "Add testing harness"
 -->
 
 ## Branches And Commits
@@ -79,6 +92,13 @@ The mainline branch uses a 'semi-linear' branch history, with merge commits only
 used to indicate the start and end of each applied topic branch.
 Rebasing code in topic branches is encouraged.
 
+```shell
+o - - - - -  o - -  o  (mainline)
+ \          / \    /
+  o--o--o--o   o--o (<topic 2>)
+  (<topic 1>)
+```
+
 Each commit in the repo should represent a logical, testable change.
 Ideally, they should also pass all linting and testing checks.
 When a branch is in active development, this does not need to be strictly adhered to,
@@ -89,6 +109,11 @@ and the full version can also include references to the issue(s) it solves and d
 of the functional details of the changes.
 
 ## Pull Requests: Getting Stuff Into The Project
+
+Before you start work on a new feature, please check the issues to reduce the chance of
+duplication of work. If there is not an issue for that work you are planning to do,
+create one and describe your intent.
+This issue my collect early feedback and suggestions that will help guide your work.
 
 When a piece of work is ready for review (including feedback during development),
 you can open a pull request on GitHub. As with code and commits,
@@ -107,7 +132,7 @@ Reviews on merge requests should be submitted using GitHub's review feature.
 Comments generally fall into four categories, but GitHub gives us no way to distinguish between them:
  - Praise: "This is good."
  - Question for the Author: "will this work if [condition]?"
- - Alternative method: "this might be better as a [lanugage feature]."
+ - Alternative method: "this might be better as a [language feature]."
  - Actual problem: "Because of [x], this change won't work for cute cats."
 
 All four of these are suitable forms of feedback.
