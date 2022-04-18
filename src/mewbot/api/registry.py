@@ -1,30 +1,22 @@
 #!/usr/bin/env python3
 
+"""Tooling for recording the creation of implementation classes, allowing
+for lists """
+
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, TypedDict
+from typing import List, Type, Any, Dict, Optional, Callable, Iterable, Tuple
 
 import abc
 import uuid
 
-from mewbot.core import ComponentKind
-
-
-class ConfigBlock(TypedDict):
-    kind: str
-    implementation: str
-    uuid: str
-    properties: Dict[str, Any]
-
-
-class BehaviourConfigBlock(ConfigBlock):
-    triggers: List[ConfigBlock]
-    conditions: List[ConfigBlock]
-    actions: List[ConfigBlock]
+from mewbot.core import ComponentKind, Component
 
 
 # noinspection PyMethodParameters
 class ComponentRegistry(abc.ABCMeta):
+    """MetaType which reg"""
+
     registered: List[Type[Any]] = []
 
     _api_versions: Dict[ComponentKind, Dict[str, Type[Component]]] = {}
@@ -34,12 +26,6 @@ class ComponentRegistry(abc.ABCMeta):
 
         if created_type.__module__ == cls.__module__:
             return created_type
-
-        if not issubclass(created_type, Component):
-            raise TypeError(
-                f"ComponentRegistry can not be used with "
-                f"non-Component class {created_type.__module__}.{created_type.__name__}"
-            )
 
         api_bases = list(cls._detect_api_versions(created_type))
 
@@ -55,7 +41,7 @@ class ComponentRegistry(abc.ABCMeta):
         cls: Type[Component], *args: Any, uid: Optional[str] = None, **properties: Any
     ) -> Any:
         if cls not in ComponentRegistry.registered:
-            raise Exception("Attempting to create a non registrable class")
+            raise TypeError("Attempting to create a non registrable class")
 
         obj: Any = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         obj.uuid = uid if uid else uuid.uuid4().hex
@@ -112,9 +98,7 @@ class ComponentRegistry(abc.ABCMeta):
         return do_register
 
     @classmethod
-    def _detect_api_versions(
-        cls, impl: Type[Component]
-    ) -> Iterable[Tuple[ComponentKind, str]]:
+    def _detect_api_versions(cls, impl: Type[Any]) -> Iterable[Tuple[ComponentKind, str]]:
         for kind, apis in cls._api_versions.items():
             for version, api in apis.items():
                 if issubclass(impl, api):
@@ -132,44 +116,3 @@ class ComponentRegistry(abc.ABCMeta):
         cls, implements: ComponentKind, version: Optional[str]
     ) -> Iterable[Type[Component]]:
         pass
-
-
-class Component(metaclass=ComponentRegistry):
-    """Hello!"""
-
-    _id: str
-
-    def serialise(self) -> ConfigBlock:
-        cls = type(self)
-
-        kind, _ = ComponentRegistry.api_version(self)
-
-        output: ConfigBlock = {
-            "kind": kind,
-            "implementation": cls.__module__ + "." + cls.__qualname__,
-            "uuid": self.uuid,
-            "properties": {},
-        }
-
-        for prop in dir(cls):
-            if not isinstance(getattr(cls, prop), property):
-                continue
-
-            if prop == "uuid":
-                continue
-
-            if getattr(cls, prop).fset:
-                output["properties"][prop] = getattr(self, prop)
-
-        return output
-
-    @property
-    def uuid(self) -> str:
-        return self._id
-
-    @uuid.setter
-    def uuid(self, _id: str) -> None:
-        if hasattr(self, "_id"):
-            raise Exception("Can not set the ID of a component outside of creation")
-
-        self._id = _id

@@ -9,7 +9,7 @@ import sys
 import yaml
 
 from mewbot.bot import Bot
-from mewbot.component import ConfigBlock, BehaviourConfigBlock
+from mewbot.config import ConfigBlock, BehaviourConfigBlock
 from mewbot.core import (
     Component,
     ComponentKind,

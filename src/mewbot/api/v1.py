@@ -2,10 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Set, Union, Type
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Union,
+    Type,
+)
 
 import abc
 
+from mewbot.api.registry import ComponentRegistry
 from mewbot.core import (
     InputEvent,
     InputQueue,
@@ -16,7 +26,48 @@ from mewbot.core import (
     ConditionInterface,
     ActionInterface,
 )
-from mewbot.component import ComponentRegistry, Component, BehaviourConfigBlock
+from mewbot.config import BehaviourConfigBlock, ConfigBlock
+
+
+class Component(metaclass=ComponentRegistry):
+    """Hello!"""
+
+    _id: str
+
+    def serialise(self) -> ConfigBlock:
+        cls = type(self)
+
+        kind, _ = ComponentRegistry.api_version(self)  # type: ignore
+
+        output: ConfigBlock = {
+            "kind": kind,
+            "implementation": cls.__module__ + "." + cls.__qualname__,
+            "uuid": self.uuid,
+            "properties": {},
+        }
+
+        for prop in dir(cls):
+            if not isinstance(getattr(cls, prop), property):
+                continue
+
+            if prop == "uuid":
+                continue
+
+            if getattr(cls, prop).fset:
+                output["properties"][prop] = getattr(self, prop)
+
+        return output
+
+    @property
+    def uuid(self) -> str:
+        return self._id
+
+    @uuid.setter
+    def uuid(self, _id: str) -> None:
+        if hasattr(self, "_id"):
+            raise AttributeError("Can not set the ID of a component outside of creation")
+
+        self._id = _id
 
 
 @ComponentRegistry.register_api_version(ComponentKind.IO_CONFIG, "v1")
@@ -191,13 +242,17 @@ class Behaviour(Component):
             await action.act(event, state)
 
     def serialise(self) -> BehaviourConfigBlock:
-        config = BehaviourConfigBlock(**super().serialise())  # type: ignore
+        config = super().serialise()
 
-        config["triggers"] = [x.serialise() for x in self.triggers]
-        config["conditions"] = [x.serialise() for x in self.conditions]
-        config["actions"] = [x.serialise() for x in self.actions]
-
-        return config  # type: ignore
+        return {
+            "kind": config["implementation"],
+            "implementation": config["implementation"],
+            "uuid": config["uuid"],
+            "properties": config["properties"],
+            "triggers": [x.serialise() for x in self.triggers],
+            "conditions": [x.serialise() for x in self.conditions],
+            "actions": [x.serialise() for x in self.actions],
+        }
 
 
 __all__ = [
