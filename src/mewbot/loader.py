@@ -33,6 +33,10 @@ def assert_message(obj: Any, interface: Type[Any]) -> str:
 
 
 def configure_bot(name: str, stream: TextIO) -> Bot:
+    """Loads a series of components from a YAML file to crate a bot
+
+    The YAML is expected to be a series of IOConfig, DataSource, and Behaviour blocks."""
+
     bot = Bot(name)
     number = 0
 
@@ -44,11 +48,11 @@ def configure_bot(name: str, stream: TextIO) -> Bot:
                 f"Document {number} missing some keys: {_REQUIRED_KEYS.difference(document.keys())}"
             )
 
-        if document["kind"] == ComponentKind.BEHAVIOUR:
+        if document["kind"] == ComponentKind.Behaviour:
             bot.add_behaviour(load_behaviour(document))
-        if document["kind"] == ComponentKind.DATASOURCE:
+        if document["kind"] == ComponentKind.DataSource:
             ...
-        if document["kind"] == ComponentKind.IO_CONFIG:
+        if document["kind"] == ComponentKind.IOConfig:
             component = load_component(document)
             assert isinstance(component, IOConfigInterface), assert_message(
                 component, IOConfigInterface
@@ -59,6 +63,8 @@ def configure_bot(name: str, stream: TextIO) -> Bot:
 
 
 def load_behaviour(config: BehaviourConfigBlock) -> BehaviourInterface:
+    """Creates a behaviour and its components based on a configuration block"""
+
     behaviour = load_component(config)
 
     assert isinstance(behaviour, BehaviourInterface)
@@ -86,18 +92,22 @@ def load_behaviour(config: BehaviourConfigBlock) -> BehaviourInterface:
 
 
 def load_component(config: ConfigBlock) -> Component:
+    """Creates a component based on a configuration block"""
+
     # Ensure that the object we have been passed contains all required fields.
     if not _REQUIRED_KEYS.issubset(config.keys()):
         raise ValueError(
             f"Config missing some keys: {_REQUIRED_KEYS.difference(config.keys())}"
         )
 
-    if not ComponentKind.has_value(config["kind"]):
-        raise ValueError(f"Invalid component kind {config['kind']}")
+    # Identify the kind of component we should be loading, and the interface that implies.
+    try:
+        kind = ComponentKind[config["kind"]]
+        interface = ComponentKind.interface(kind)
+    except KeyError as err:
+        raise ValueError(f"Invalid component kind {config['kind']}") from err
 
-    kind = ComponentKind(config["kind"])
-    interface = ComponentKind.interface(kind)
-
+    # Locate the implementation class to be loaded
     target_class = get_implementation(config["implementation"])
 
     # Verify that the implementation class matches the interface we got from

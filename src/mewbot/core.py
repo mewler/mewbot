@@ -127,18 +127,15 @@ Component = Union[
 ]
 
 
+# pylint: disable=C0103
 class ComponentKind(str, enum.Enum):
-    BEHAVIOUR = "Behaviour"
-    TRIGGER = "Trigger"
-    CONDITION = "Condition"
-    ACTION = "Action"
-    IO_CONFIG = "IOConfig"
-    TEMPLATE = "Template"
-    DATASOURCE = "DataSource"
-
-    @classmethod
-    def has_value(cls, value: str) -> bool:
-        return value in cls.values()
+    Behaviour = "Behaviour"
+    Trigger = "Trigger"
+    Condition = "Condition"
+    Action = "Action"
+    IOConfig = "IOConfig"
+    Template = "Template"
+    DataSource = "DataSource"
 
     @classmethod
     def values(cls) -> List[str]:
@@ -147,11 +144,11 @@ class ComponentKind(str, enum.Enum):
     @classmethod
     def interface(cls, value: ComponentKind) -> Type[Component]:
         _map: Dict[ComponentKind, Type[Component]] = {
-            cls.BEHAVIOUR: BehaviourInterface,
-            cls.TRIGGER: TriggerInterface,
-            cls.CONDITION: ConditionInterface,
-            cls.ACTION: ActionInterface,
-            cls.IO_CONFIG: IOConfigInterface,
+            cls.Behaviour: BehaviourInterface,
+            cls.Trigger: TriggerInterface,
+            cls.Condition: ConditionInterface,
+            cls.Action: ActionInterface,
+            cls.IOConfig: IOConfigInterface,
         }
 
         if value in _map:

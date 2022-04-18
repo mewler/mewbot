@@ -70,7 +70,7 @@ class Component(metaclass=ComponentRegistry):
         self._id = _id
 
 
-@ComponentRegistry.register_api_version(ComponentKind.IO_CONFIG, "v1")
+@ComponentRegistry.register_api_version(ComponentKind.IOConfig, "v1")
 class IOConfig(Component):
     """
     Define a service that mewbot can connect to.
@@ -122,7 +122,7 @@ class Output:
         """
 
 
-@ComponentRegistry.register_api_version(ComponentKind.TRIGGER, "v1")
+@ComponentRegistry.register_api_version(ComponentKind.Trigger, "v1")
 class Trigger(Component):
     @staticmethod
     @abc.abstractmethod
@@ -134,7 +134,7 @@ class Trigger(Component):
         pass
 
 
-@ComponentRegistry.register_api_version(ComponentKind.CONDITION, "v1")
+@ComponentRegistry.register_api_version(ComponentKind.Condition, "v1")
 class Condition(Component):
     @staticmethod
     @abc.abstractmethod
@@ -146,7 +146,7 @@ class Condition(Component):
         pass
 
 
-@ComponentRegistry.register_api_version(ComponentKind.ACTION, "v1")
+@ComponentRegistry.register_api_version(ComponentKind.Action, "v1")
 class Action(Component):
     @staticmethod
     @abc.abstractmethod
@@ -177,7 +177,7 @@ class Action(Component):
         pass
 
 
-@ComponentRegistry.register_api_version(ComponentKind.BEHAVIOUR, "v1")
+@ComponentRegistry.register_api_version(ComponentKind.Behaviour, "v1")
 class Behaviour(Component):
     name: str
     active: bool
