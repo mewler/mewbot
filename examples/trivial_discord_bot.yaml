@@ -1,34 +1,26 @@
-apiVersion: v1
 kind: IOConfig
-module: mewbot.io.discord
-name: DiscordIO
-uuid: 1
+implementation: mewbot.io.discord.DiscordIO
+uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa00
 properties:
   token: "[token goes here]"
 
 ---
 
-apiVersion: v1
 kind: Behaviour
-module: mewbot.api.v1
-name: Behaviour
-uuid: 1
+implementation: mewbot.api.v1.Behaviour
+uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa01
 properties:
   name: 'Echo Inputs'
 triggers:
-  - apiVersion: v1
-    kind: Trigger
-    module: examples.trivial_discord_bot
-    name: DiscordTextCommandTrigger
-    uuid: 1
+  - kind: Trigger
+    implementation: examples.trivial_discord_bot.DiscordTextCommandTrigger
+    uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa02
     properties:
       command: "!hello"
 conditions: []
 actions:
-  - apiVersion: v1
-    kind: Action
-    module: examples.trivial_discord_bot
-    name: DiscordCommandTextResponse
-    uuid: 1
+  - kind: Action
+    implementation: examples.trivial_discord_bot.DiscordCommandTextResponse
+    uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa03
     properties:
       message: "world"

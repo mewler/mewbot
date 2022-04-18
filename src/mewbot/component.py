@@ -12,9 +12,7 @@ from mewbot.core import ComponentKind
 
 class ConfigBlock(TypedDict):
     kind: str
-    apiVersion: str
-    module: str
-    name: str
+    implementation: str
     uuid: str
     properties: Dict[str, Any]
 
@@ -144,13 +142,11 @@ class Component(metaclass=ComponentRegistry):
     def serialise(self) -> ConfigBlock:
         cls = type(self)
 
-        api = ComponentRegistry.api_version(self)
+        kind, _ = ComponentRegistry.api_version(self)
 
         output: ConfigBlock = {
-            "kind": api[0],
-            "apiVersion": api[1],
-            "module": cls.__module__,
-            "name": cls.__name__,
+            "kind": kind,
+            "implementation": cls.__module__ + "." + cls.__qualname__,
             "uuid": self.uuid,
             "properties": {},
         }
