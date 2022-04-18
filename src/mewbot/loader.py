@@ -91,10 +91,6 @@ def load_component(config: ConfigBlock) -> Component:
 
     kind = ComponentKind(config["kind"])
 
-    if not ComponentRegistry.has_api_version(kind, config["apiVersion"]):
-        raise TypeError(
-            f"API Version {config['apiVersion']} for {config['kind']} not registered"
-        )
 
     module = sys.modules[config["module"]]
 

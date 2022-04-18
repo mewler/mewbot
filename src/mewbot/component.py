@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, TypedDict
 
 import abc
-
-# import inspect
 import uuid
 
 from mewbot.core import ComponentKind
@@ -51,15 +49,6 @@ class ComponentRegistry(abc.ABCMeta):
             raise TypeError(
                 f"Class {created_type.__module__}.{created_type.__name__} inherits from two APIs"
             )
-
-        # if not inspect.isabstract(created_type) and not api_bases:
-        #     raise TypeError(
-        #         f"Non-abstract class {created_type.__module__}.{created_type.__name__} "
-        #         f"must inherit from an API base"
-        #     )
-
-        # if not created_type.__doc__:
-        #    raise Exception(f"No docs? No service! ({name})")
 
         ComponentRegistry.registered.append(created_type)
         return created_type
@@ -107,9 +96,6 @@ class ComponentRegistry(abc.ABCMeta):
                     f"Component kind '{kind}' not valid (must be one of {ComponentKind.values()})"
                 )
 
-            # if not inspect.isabstract(api):
-            #     raise TypeError("Can not register an API version from a non-abstract class")
-
             if not issubclass(api, ComponentKind.interface(kind)):
                 raise TypeError(f"{api} does not meet the contract of a {kind.value}")
 
@@ -126,10 +112,6 @@ class ComponentRegistry(abc.ABCMeta):
             return api
 
         return do_register
-
-    @classmethod
-    def has_api_version(cls, kind: ComponentKind, version: str) -> bool:
-        return version in cls._api_versions.get(kind, {})
 
     @classmethod
     def _detect_api_versions(
