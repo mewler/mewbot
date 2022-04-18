@@ -9,7 +9,9 @@ import sys
 import yaml
 
 from mewbot.bot import Bot
+from mewbot.component import ConfigBlock, BehaviourConfigBlock
 from mewbot.core import (
+    Component,
     ComponentKind,
     IOConfigInterface,
     BehaviourInterface,
@@ -17,12 +19,7 @@ from mewbot.core import (
     ConditionInterface,
     ActionInterface,
 )
-from mewbot.component import (
-    ConfigBlock,
-    BehaviourConfigBlock,
-    Component,
-    ComponentRegistry,
-)
+
 
 _REQUIRED_KEYS = set(ConfigBlock.__annotations__.keys())  # pylint: disable=no-member
 
@@ -90,7 +87,7 @@ def load_component(config: ConfigBlock) -> Component:
         raise ValueError(f"Invalid component kind {config['kind']}")
 
     kind = ComponentKind(config["kind"])
-
+    interface = ComponentKind.interface(kind)
 
     module = sys.modules[config["module"]]
 
@@ -99,11 +96,25 @@ def load_component(config: ConfigBlock) -> Component:
 
     target_class: Type[Any] = getattr(module, config["name"])
 
-    if not issubclass(target_class, Component):
+    # Verify that the implementation class matches the interface we got from
+    # the `kind:` hint.
+    if not issubclass(target_class, interface):
         raise Exception("Trying to load a non-registered class from config")
 
     component = target_class.__call__(uid=config["uuid"], **config["properties"])
 
-    assert isinstance(component, Component)
+    # Verify the instance implements a valid interface.
+    # The second call is to reassure the linter that the types are correct.
+    assert isinstance(component, interface)
+    assert isinstance(
+        component,
+        (
+            IOConfigInterface,
+            BehaviourInterface,
+            TriggerInterface,
+            ConditionInterface,
+            ActionInterface,
+        ),
+    )
 
     return component

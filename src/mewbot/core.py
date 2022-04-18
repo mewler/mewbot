@@ -9,39 +9,6 @@ import enum
 import dataclasses
 
 
-class ComponentKind(str, enum.Enum):
-    BEHAVIOUR = "Behaviour"
-    TRIGGER = "Trigger"
-    CONDITION = "Condition"
-    ACTION = "Action"
-    IO_CONFIG = "IOConfig"
-    TEMPLATE = "Template"
-    DATASOURCE = "DataSource"
-
-    @classmethod
-    def has_value(cls, value: str) -> bool:
-        return value in cls.values()
-
-    @classmethod
-    def values(cls) -> List[str]:
-        return list(e for e in cls)
-
-    @classmethod
-    def interface(cls, value: ComponentKind) -> Type[Any]:
-        _map = {
-            cls.BEHAVIOUR: BehaviourInterface,
-            cls.TRIGGER: TriggerInterface,
-            cls.CONDITION: ConditionInterface,
-            cls.ACTION: ActionInterface,
-            cls.IO_CONFIG: IOConfigInterface,
-        }
-
-        if value in _map:
-            return _map[value]
-
-        raise ValueError(f"Invalid value {value}")
-
-
 @dataclasses.dataclass
 class InputEvent:
     pass
@@ -151,8 +118,51 @@ class BehaviourInterface(Protocol):
         pass
 
 
+Component = Union[
+    BehaviourInterface,
+    IOConfigInterface,
+    TriggerInterface,
+    ConditionInterface,
+    ActionInterface,
+]
+
+
+class ComponentKind(str, enum.Enum):
+    BEHAVIOUR = "Behaviour"
+    TRIGGER = "Trigger"
+    CONDITION = "Condition"
+    ACTION = "Action"
+    IO_CONFIG = "IOConfig"
+    TEMPLATE = "Template"
+    DATASOURCE = "DataSource"
+
+    @classmethod
+    def has_value(cls, value: str) -> bool:
+        return value in cls.values()
+
+    @classmethod
+    def values(cls) -> List[str]:
+        return list(e for e in cls)
+
+    @classmethod
+    def interface(cls, value: ComponentKind) -> Type[Component]:
+        _map: Dict[ComponentKind, Type[Component]] = {
+            cls.BEHAVIOUR: BehaviourInterface,
+            cls.TRIGGER: TriggerInterface,
+            cls.CONDITION: ConditionInterface,
+            cls.ACTION: ActionInterface,
+            cls.IO_CONFIG: IOConfigInterface,
+        }
+
+        if value in _map:
+            return _map[value]
+
+        raise ValueError(f"Invalid value {value}")
+
+
 __all__ = [
     "ComponentKind",
+    "Component",
     "IOConfigInterface",
     "InputInterface",
     "OutputInterface",
