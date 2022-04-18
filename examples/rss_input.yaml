@@ -4,10 +4,11 @@ module: mewbot.io.rss
 name: RSSIO
 uuid: 1
 properties:
-  sites: ["https://www.theguardian.com/world/rss", ]
-  polling_every: 5
+  sites: ["https://www.theguardian.com/world/rss", "https://www.engadget.com/rss.xml" ]
+  polling_every: 60
 
 ---
+
 
 apiVersion: v1
 kind: Behaviour
@@ -19,17 +20,16 @@ properties:
 triggers:
   - apiVersion: v1
     kind: Trigger
-    module: examples.trivial_discord_bot
-    name: DiscordTextCommandTrigger
+    module: mewbot.demo
+    name: AllEventTrigger
     uuid: 1
-    properties:
-      command: "!hello"
+    properties: { }
 conditions: []
 actions:
   - apiVersion: v1
     kind: Action
-    module: examples.trivial_discord_bot
-    name: DiscordCommandTextResponse
+    module: examples.rss_input
+    name: RSSPrintAction
     uuid: 1
-    properties:
-      message: "world"
+    properties: { }
+
