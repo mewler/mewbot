@@ -27,20 +27,21 @@ class RSSPrintAction(Action):
     async def act(self, event: InputEvent, state: Dict[str, Any]) -> None:
 
         if not isinstance(event, RSSInputEvent):
-            print("Unexpected event {}".format(event))
+            print(f"Unexpected event {event}")
 
-        rss_output_str = []
-        try:
-            rss_output_str.append(f"New event title - {event.title}")
-        except AttributeError:
-            pass
-        try:
-            rss_output_str.append(f"New event author - {event.author}")
-        except AttributeError:
-            pass
-        try:
-            rss_output_str.append(f"New event ... event - \n{event}")
-        except AttributeError:
-            pass
+        if isinstance(event, RSSInputEvent):
+            rss_output_str = []
+            try:
+                rss_output_str.append(f"New event title - {event.title}")
+            except AttributeError:
+                pass
+            try:
+                rss_output_str.append(f"New event author - {event.author}")
+            except AttributeError:
+                pass
+            try:
+                rss_output_str.append(f"New event ... event - \n{event}")
+            except AttributeError:
+                pass
 
         print("\n".join(rss_output_str))
