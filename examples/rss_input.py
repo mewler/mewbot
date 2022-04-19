@@ -31,17 +31,9 @@ class RSSPrintAction(Action):
 
         if isinstance(event, RSSInputEvent):
             rss_output_str = []
-            try:
-                rss_output_str.append(f"New event title - {event.title}")
-            except AttributeError:
-                pass
-            try:
-                rss_output_str.append(f"New event author - {event.author}")
-            except AttributeError:
-                pass
-            try:
-                rss_output_str.append(f"New event ... event - \n{event}")
-            except AttributeError:
-                pass
+
+            rss_output_str.append(f"New event title - {event.title}")
+            rss_output_str.append(f"New event author - {event.author}")
+            rss_output_str.append(f"New event ... event - \n{event}")
 
         print("\n".join(rss_output_str))
