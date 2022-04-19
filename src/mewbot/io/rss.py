@@ -250,13 +250,11 @@ class RSSInput(Input):
         for target_site in self._sites_iter:
 
             if target_site not in self.sites_started:
-                asyncio.get_running_loop().create_task(self.startup_site_feed(target_site))
-                # Delay before getting the next site
-                # stagger site reads to prevent overwealming anything
-                await asyncio.sleep(self.polling_every)
-                continue
+                future = self.startup_site_feed(target_site)
+            else:
+                future = self.poll_site_feed(target_site))
 
-            asyncio.get_running_loop().create_task(self.poll_site_feed(target_site))
+            asyncio.get_running_loop().create_task(future)
             # Delay before getting the next site
             # stagger site reads to prevent overwealming anything
             await asyncio.sleep(self.polling_every)
