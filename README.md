@@ -8,7 +8,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![Linting](https://github.com/mewler/mewbot/actions/workflows/pylint.yml/badge.svg)](https://github.com/mewler/mewbot/actions/workflows/pylint.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mewler_mewbot&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mewler_mewbot)
