@@ -1,7 +1,7 @@
 {
   "files": [
     "README.md",
-	"CONTRIBUTORS.md"
+    "CONTRIBUTORS.md"
   ],
   "imageSize": 50,
   "commit": false,
@@ -13,6 +13,17 @@
       "profile": "http://blog.harcourtprogramming.co.uk",
       "contributions": [
         "code",
+        "ideas"
+      ]
+    },
+    {
+      "login": "ajCameron",
+      "name": "ajCameron",
+      "avatar_url": "https://avatars.githubusercontent.com/u/8434302?v=4",
+      "profile": "https://github.com/ajCameron",
+      "contributions": [
+        "code",
+        "example",
         "ideas"
       ]
     }
