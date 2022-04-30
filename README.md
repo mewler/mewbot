@@ -32,7 +32,7 @@ minimal coding experience.
 | `mewbot-dev`              | `mewbot.component`, `mewbot.api.v1` | Development libraries + component registry system. This is the package that all 3rd party libraries should depend on for their interfaces. |
 | `mewbot-runner`           | `mewbot.loader`, `mewbot.bot`       | Tools to load a bot, and run that bot.                                                                                                     |
 | `mewbot-[discord/twitch]` | `mewbot.io.[discord/twitch]`        | The bindings to connect MewBot to a given service.                                                                                         |
-| `mewbot-tests`            | `mewbot.tests`                      | MewBot test cases for pytest.                                                                                                              |
+| `mewbot-tests`            | `mewbot.tests`                      | Pytest test cases for MewBot.                                                                                                              |
 
 ![module dependency graph](./mewbot.svg)
 

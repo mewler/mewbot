@@ -26,3 +26,4 @@ examples/TrivialDiscordBot/secrets.json
 # Coverage artefacts
 .coverage
 /.coverage_html/
+/.pytest_cache/

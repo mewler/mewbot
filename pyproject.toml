@@ -11,7 +11,7 @@ line-length = 94
 persistent = "yes"
 unsafe-load-any-extension = "no"
 
-jobs=4
+jobs=1
 
 [tool.pylint."MESSAGES CONTROL"]
 
@@ -33,7 +33,7 @@ dynamic_context = "test_function"
 
 [tool.coverage.report]
 
-fail_under=80.0
+fail_under=40.0
 
 [tool.coverage.html]
 
