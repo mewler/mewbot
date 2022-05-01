@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Optional, Set, Sequence, Type, Any, Union, List, SupportsInt
+
+import asyncio
 
 import dataclasses
 import logging
 import pprint
 from itertools import cycle
 
+import aiohttp
 import feedparser  # type: ignore
 
 from mewbot.core import InputEvent, OutputEvent
@@ -95,7 +97,6 @@ class RSSIO(IOConfig):
     def __init__(
         self,
         *args: Optional[Any],
-        polling_every: Union[str, bytes, SupportsInt],
         **kwargs: Optional[Any],
     ) -> None:
         self._logger = logging.getLogger(__name__ + "DesktopNotificationIO")
@@ -104,7 +105,13 @@ class RSSIO(IOConfig):
         self._logger.info("DesktopNotificationIO received args - %s", args)
         self._logger.info("DesktopNotificationIO received kwargs - %s", kwargs)
 
-        self._polling_every = int(polling_every)
+    @property
+    def polling_every(self) -> int:
+        return self._polling_every
+
+    @polling_every.setter
+    def polling_every(self, new_polling_every: SupportsInt) -> None:
+        self._polling_every = int(new_polling_every)
 
     @property
     def sites(self) -> List[str]:
@@ -135,6 +142,8 @@ class RSSInput(Input):
     Polling RSS Input source -
     """
 
+    _loop: Union[None, asyncio.events.AbstractEventLoop]
+
     _logger: logging.Logger
 
     _sites: List[str]  # A list of sites to poll for RSS update events
@@ -145,7 +154,7 @@ class RSSInput(Input):
     def __init__(
         self, sites: List[str], polling_every: int, startup_queue_depth: int = 5
     ) -> None:
-        super(Input, self).__init__()  # pylint: disable=bad-super-call
+        super().__init__()
 
         self._sites = sites
         self._sites_iter = cycle(iter(self._sites))
@@ -174,6 +183,8 @@ class RSSInput(Input):
         self.sent_entries = (
             set()
         )  # Methadology needs to be reworked for long running processess
+
+        self._loop = None
 
     @property
     def polling_interval(self) -> Union[float, None]:
@@ -211,6 +222,13 @@ class RSSInput(Input):
     @polling_every.setter
     def polling_every(self, new_polling_time: int) -> None:
         self._polling_every = new_polling_time
+
+    @property
+    def loop(self) -> asyncio.events.AbstractEventLoop:
+        if self._loop is not None:
+            return self._loop
+        self._loop = asyncio.get_running_loop()
+        return self._loop
 
     def _get_entry_uid(self, entry: feedparser.util.FeedParserDict, site_url: str) -> str:
         """
@@ -250,16 +268,32 @@ class RSSInput(Input):
         for target_site in self._sites_iter:
 
             if target_site not in self.sites_started:
-                asyncio.get_running_loop().create_task(self.startup_site_feed(target_site))
-                # Delay before getting the next site
-                # stagger site reads to prevent overwealming anything
-                await asyncio.sleep(self.polling_every)
-                continue
+                future = self.startup_site_feed(target_site)
+            else:
+                future = self.poll_site_feed(target_site)
 
-            asyncio.get_running_loop().create_task(self.poll_site_feed(target_site))
+            self.loop.create_task(future)
+
             # Delay before getting the next site
             # stagger site reads to prevent overwealming anything
             await asyncio.sleep(self.polling_every)
+
+    async def fetch_feed(self, url: str) -> feedparser.FeedParserDict:
+        """
+        The actual action of fetch a feed - isolated here for easier replacement later.
+        """
+        # Need to add timeout and use etags to cut down on badnwidth use
+        async with aiohttp.ClientSession(loop=self.loop) as session:
+            async with session.get(url) as resp:
+
+                resp_text = await resp.read()
+                resp_headers = resp.headers
+
+                site_newsfeed = feedparser.parse(
+                    url_file_stream_or_string=resp_text, response_headers=resp_headers
+                )
+
+        return site_newsfeed
 
     async def startup_site_feed(self, site_url: str) -> None:
         """
@@ -273,7 +307,8 @@ class RSSInput(Input):
         )
 
         # Read the site feed
-        site_newsfeed = feedparser.parse(site_url)
+        site_newsfeed = await self.fetch_feed(site_url)
+
         site_entries = site_newsfeed.entries
 
         # Read the requested number of entries and put them on the wire
@@ -305,7 +340,7 @@ class RSSInput(Input):
         self._logger.info("Reading from site %s", site_url)
 
         # Read the site feed
-        site_newsfeed = feedparser.parse(site_url)
+        site_newsfeed = await self.fetch_feed(site_url)
         site_entries = site_newsfeed.entries
 
         # Itterate backwards until we run into an entry which has already been sent
