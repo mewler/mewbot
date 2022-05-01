@@ -3,64 +3,39 @@
 
 from __future__ import annotations
 
-import pytest
-
 import copy
-import yaml
 
-from mewbot.loader import  (
-    load_component
-    )
+from tests.common import ExampleHttpPostIOConfig
 
-from mewbot.core import (
-    ComponentKind,
-    IOConfigInterface
-    )
-from mewbot.component import (
-    ConfigBlock,
-    Component
-)
+from mewbot.component import Component
 from mewbot.io.http import HTTPServlet
 from mewbot.io.socket import SocketIO
 from mewbot.api.v1 import IOConfig
 
-class Test_io_https_post:
-    fname = 'examples/trivial_http_post.yaml'
-    config_toload = True
-    config : IOConfigInterface
-    component_toload = True
-    component : Component
+# pylint: disable=R0903
+#  Disable "too few public methods" for test cases - most test files will be classes used for
+#  grouping and then individual tests alongside these
+# pylint: disable=R0201
+#  Disable "no self use" for functions. These functions will not be used internally as they are
+#  automatically called by pytest as it seeks and searches for tests.
 
-    # Prereq;
-    def cache_config(self):
-        if self.config_toload:
-            with open(self.fname, "r", encoding="utf-8") as config:
-                for document in yaml.load_all(config, Loader=yaml.CSafeLoader):
-                    if document["kind"] == ComponentKind.IO_CONFIG:
-                        self.config = document
-                        self.config_toload = False
-    
-    def cache_component(self):
-        if self.component_toload:
-            self.cache_config()
-            self.component = load_component(self.config)
-            
-    def test_check_class(self):
+
+class TestIoHttpsPost(ExampleHttpPostIOConfig):
+    def test_check_class(self) -> None:
         self.cache_component()
-        assert (isinstance(self.component, HTTPServlet))
-        assert (isinstance(self.component, SocketIO))
-        assert (isinstance(self.component, IOConfig))
-        assert (isinstance(self.component, Component))
-        
-    def test_check_setget(self):
+        assert isinstance(self.component, HTTPServlet)
+        assert isinstance(self.component, SocketIO)
+        assert isinstance(self.component, IOConfig)
+        assert isinstance(self.component, Component)
+
+    def test_check_setget(self) -> None:
         self.cache_component()
         # Check each set and get
         temp_component = copy.deepcopy(self.component)
-        
-        new_host = 'nullfailtouse'
-        temp_component._host = new_host
-        assert(temp_component.host == new_host)
+
+        new_host = "nullfailtouse"
+        temp_component.host = new_host
+        assert temp_component.host == new_host
         new_port = 0
-        temp_component._port = new_port
-        assert(temp_component.port == new_port)
-    
+        temp_component.port = new_port
+        assert temp_component.port == new_port

@@ -1,48 +1,39 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Generator
 
-from typing import Generator
-
-import os
 import subprocess
 import sys
+import os
+
+from tools.common import Annotation, github_list, run_utility
 
 
 class TestToolchain:
-    def __init__(self, ci: bool) -> None:
-        self.is_ci = ci
+    is_ci: bool
+    success: bool
+
+    def __init__(self, in_ci: bool) -> None:
+        self.is_ci = in_ci
         self.success = True
 
-    def __call__(self) -> Generator[str, None, None]:
+    def __call__(self) -> Generator[Annotation, None, None]:
         yield from self.run_tests()
 
     def run_tool(self, name: str, *args: str) -> subprocess.CompletedProcess[bytes]:
         arg_list = list(args)
 
-        run = subprocess.run(
-            arg_list, stdin=subprocess.DEVNULL, capture_output=self.is_ci, check=False
-        )
+        run_result = run_utility(name, arg_list, self.is_ci)
 
-        if run.returncode:
-            self.success = False
+        self.success = run_result["success"]
 
-        if self.is_ci:
-            print(f"::group::{name}")
-            sys.stdout.write(run.stdout.decode("utf-8"))
-            sys.stdout.write(run.stderr.decode("utf-8"))
-            print("::endgroup::")
-        else:
-            run.stdout = b""
-            run.stderr = b""
+        return run_result["completedProcess"]
 
-        return run
-
-    def run_tests(self) -> Generator[str, None, None]:
+    def run_tests(self) -> Generator[Annotation, None, None]:
         args = self.build_pytest_args()
 
         result = self.run_tool("PyTest (Testing Framework)", *args)
 
-        yield from parse_pytest_out(result)
+        yield from self.parse_pytest_out(result)
 
     def build_pytest_args(self) -> List[str]:
         args = ["pytest"]
@@ -65,26 +56,58 @@ class TestToolchain:
 
         return args
 
+    def parse_pytest_out(
+        self,
+        result: subprocess.CompletedProcess[bytes],
+    ) -> Generator[Annotation, None, None]:
+        # flake8: noqa: max-complexity: 10
+        # 10 is the current raised complexity floor of this method. The complexity is due to
+        # various different text options for the line; which is exacerbated by a toggling state
+        # on if the parser is in the "FAILURES" block or otherwise.
 
-def parse_pytest_out(
-    result: subprocess.CompletedProcess[bytes],
-) -> Generator[str, None, None]:
-    outputs = result.stdout.decode("utf-8").split("\n")
-    for output in outputs:
-        if output.startswith("FAILED"):
-            yield output
+        outputs = result.stdout.decode("utf-8").split("\n")
+        current_test = ""
+        in_failures = False
+
+        for output in outputs:
+            if output == "":
+                continue
+
+            # Limit checking of some elements purely to where they are declared (the "FAILURES"
+            # block)
+            if "= FAILURES =" in output:
+                in_failures = True
+            elif "- coverage:" in output:
+                in_failures = False
+
+            if in_failures:
+                if output.startswith("_") and len(output.split(" ")) == 3:
+                    # New file
+                    current_test = output.split(" ")[1]
+
+                elif in_failures and ".py:" in output:
+                    split_output = output.split(":")
+                    this_filepath = split_output[0]
+                    this_line = int(split_output[1])
+                    this_err = split_output[2].strip()
+                    if this_err == "":
+                        this_err = "OtherError"
+                    yield Annotation(
+                        "error", this_filepath, this_line, 1, this_err, current_test
+                    )
+
+            if ("FAIL Required test coverage" in output) and ("not reached." in output):
+                yield Annotation("error", "tools/test.py", 1, 1, "CoverageError", output)
+                self.success = False
 
 
 if __name__ == "__main__":
     is_ci = "GITHUB_ACTION" in os.environ
 
-    testing = TestToolchain(ci=is_ci)
+    testing = TestToolchain(in_ci=is_ci)
     issues = list(testing())
 
     if is_ci:
-        print("::group::Annotations")
-        for issue in sorted(issues):
-            print(issue)
-        print("::endgroup::")
+        github_list(issues)
 
-        print("Total Issues:", len(issues))
+    sys.exit(not testing.success or len(issues) > 0)
