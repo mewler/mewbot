@@ -183,7 +183,6 @@ class RSSInput(Input):
     _rss_input_event_factory: RSSInputEventFactory
 
     state: RSSInputState
-    sent_entries: Set[str]  # entries which have been put on the wire
 
     def __init__(
         self, sites: List[str], polling_every: int, startup_queue_depth: int = 5
@@ -357,7 +356,7 @@ class RSSInput(Input):
         for _ in range(0, self.startup_queue_depth):
 
             entry_internal_id = self._get_entry_uid(entry=site_entries[_], site_url=site_url)
-            if entry_internal_id in self.sent_entries:
+            if entry_internal_id in self.state.sent_entries:
                 self._logger.warning(
                     "entry_internal_id - %s - for entry - %s - from site - %s - "
                     "has been seen before!",
@@ -373,7 +372,7 @@ class RSSInput(Input):
                 # Not enough entries in the retrieved feed to exhaust startup requirements?
                 break
 
-            self.sent_entries.add(entry_internal_id)
+            self.state.sent_entries.add(entry_internal_id)
 
         self.state.note_site_started(site_url)
 
@@ -391,12 +390,12 @@ class RSSInput(Input):
 
             entry_uid = self._get_entry_uid(entry, site_url)
 
-            if entry_uid in self.sent_entries:
+            if entry_uid in self.state.sent_entries:
                 break
 
             await self._send_entry(entry=entry, site_url=site_url, startup=False)
             transmitted_count += 1
-            self.sent_entries.add(self._get_entry_uid(entry=entry, site_url=site_url))
+            self.state.sent_entries.add(self._get_entry_uid(entry=entry, site_url=site_url))
 
         self._logger.info("%s entries from %s transmitted", transmitted_count, site_url)
 
