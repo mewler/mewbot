@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Set, Sequence, Type, Any, Union, List, SupportsInt
+from typing import Optional, Set, Sequence, Type, Any, Union, List, SupportsInt, Iterable
 
 import asyncio
 
@@ -92,7 +92,7 @@ class RSSIO(IOConfig):
     _output: None
 
     _sites: List[str]  # A list of sites to poll for RSS update events
-    _polling_every: int  # Total re-poll time for the sites in the _sites list
+    _polling_every: int  # How often to poll all the given sites (in seconds)
 
     def __init__(
         self,
@@ -137,6 +137,38 @@ class RSSIO(IOConfig):
         return []
 
 
+@dataclasses.dataclass
+class RSSInputState:
+
+    _sites: List[str]  # A list of sites to poll for RSS update events
+    _sites_iter: Iterable[str]
+    _sites_started: Set[str]  # sites which have undergone startup
+    sent_entries: Set[str]  # Entries which have been put on the wire
+
+    @property
+    def sites(self) -> List[str]:
+        return self._sites
+
+    @sites.setter
+    def sites(self, new_sites: List[str]) -> None:
+        self._sites = new_sites
+        self._sites_iter = cycle(iter(new_sites))
+
+    @property
+    def sites_iter(self) -> Iterable[str]:
+        return self._sites_iter
+
+    @property
+    def sites_started(self) -> Set[str]:
+        return self._sites_started
+
+    def note_site_started(self, site_started: str) -> None:
+        """
+        Record that a site has been successfully started.
+        """
+        self._sites_started.add(site_started)
+
+
 class RSSInput(Input):
     """
     Polling RSS Input source -
@@ -146,9 +178,11 @@ class RSSInput(Input):
 
     _logger: logging.Logger
 
-    _sites: List[str]  # A list of sites to poll for RSS update events
     _polling_every: int  # How often to poll all the given sites (in seconds)
-    sites_started: Set[str]  # sites which have undergone startup
+
+    _rss_input_event_factory: RSSInputEventFactory
+
+    state: RSSInputState
     sent_entries: Set[str]  # entries which have been put on the wire
 
     def __init__(
@@ -156,8 +190,16 @@ class RSSInput(Input):
     ) -> None:
         super().__init__()
 
-        self._sites = sites
-        self._sites_iter = cycle(iter(self._sites))
+        # Internal state variables
+        self.state = RSSInputState(
+            _sites=sites,
+            _sites_iter=cycle(iter(sites)),
+            _sites_started=set(),
+            sent_entries=set(),
+        )
+
+        # Generare a warning if the polling interval is less than this
+        self.short_warning_interval = 60
 
         self._polling_every = polling_every  # The time taken to poll ever site in sites once
 
@@ -173,16 +215,12 @@ class RSSInput(Input):
         # logging start
         self._logger.info(
             "RSSInput starting: \nsites\n%s\npolling_every: %s\nstartup_queue_depth: %s",
-            pprint.pformat(self._sites),
+            pprint.pformat(self.state.sites),
             self._polling_every,
             self.startup_queue_depth,
         )
 
-        # Internal state variables
-        self.sites_started = set()
-        self.sent_entries = (
-            set()
-        )  # Methadology needs to be reworked for long running processess
+        self._rss_input_event_factory = RSSInputEventFactory()
 
         self._loop = None
 
@@ -193,18 +231,17 @@ class RSSInput(Input):
         The total time between repoll of each site is polling_every.
         """
         # If we have no sites to poll, then we shall do nothing
-        if len(self._sites) == 0:
+        if len(self.state.sites) == 0:
             return None
-        return float(self._polling_every) / float(len(self._sites))
+        return float(self._polling_every) / float(len(self.state.sites))
 
     @property
     def sites(self) -> List[str]:
-        return self._sites
+        return self.state.sites
 
     @sites.setter
     def sites(self, new_sites: List[str]) -> None:
-        self._sites = new_sites
-        self._sites_iter = cycle(iter(self._sites))
+        self.state.sites = new_sites
 
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
@@ -236,12 +273,7 @@ class RSSInput(Input):
         Used to determine if entries have been put on the wire or not
         """
         try:
-            entry_title = entry.title
-        except AttributeError:
-            entry_title = TITLE_NOT_SET_STR
-
-        try:
-            entry_guid = entry.guid
+            entry_in_feed_id = entry.guid
         except AttributeError:
             self._logger.warning(
                 "entry %s did not possess a guid - %s might be producing malformed RSS entries",
@@ -249,10 +281,15 @@ class RSSInput(Input):
                 site_url,
             )
 
-            # This is not a fantastic fallback - but it should work most of the time
-            entry_guid = f"{entry_title}"
+            try:
+                entry_pubdate = entry.pubDate
+            except AttributeError:
+                entry_pubdate = PUBDATE_NOT_SET_STR
 
-        return f"{entry_guid}:{site_url}"
+            # This is not a fantastic fallback - but it should work most of the time
+            entry_in_feed_id = f"{entry_pubdate}"
+
+        return f"{entry_in_feed_id}:{site_url}"
 
     async def run(self) -> None:
         """
@@ -261,21 +298,26 @@ class RSSInput(Input):
         """
         self._logger.info(
             "About to start RSS polling - %s will be polled every %s seconds",
-            self._sites,
+            self.state.sites,
             self._polling_every,
         )
+        if self._polling_every < self.short_warning_interval:
+            self._logger.warning(
+                "RSS polling interval is short %s (< %s seconds)",
+                self._polling_every,
+                self.short_warning_interval,
+            )
 
-        for target_site in self._sites_iter:
+        for target_site in self.state.sites_iter:
 
-            if target_site not in self.sites_started:
+            if target_site not in self.state.sites_started:
                 future = self.startup_site_feed(target_site)
             else:
                 future = self.poll_site_feed(target_site)
 
             self.loop.create_task(future)
 
-            # Delay before getting the next site
-            # stagger site reads to prevent overwealming anything
+            # Delay to stagger site reads to prevent overwealming anything
             await asyncio.sleep(self.polling_every)
 
     async def fetch_feed(self, url: str) -> feedparser.FeedParserDict:
@@ -333,7 +375,7 @@ class RSSInput(Input):
 
             self.sent_entries.add(entry_internal_id)
 
-        self.sites_started.add(site_url)
+        self.state.note_site_started(site_url)
 
     async def poll_site_feed(self, site_url: str) -> None:
 
@@ -358,8 +400,74 @@ class RSSInput(Input):
 
         self._logger.info("%s entries from %s transmitted", transmitted_count, site_url)
 
+    async def _send_entry(
+        self, entry: feedparser.util.FeedParserDict, site_url: str, startup: bool = False
+    ) -> None:
+        """
+        Parse an RSS entry and put the OutputEvent representing it on the wire.
+        """
+        input_rss_event = self._rss_input_event_factory(entry, site_url, startup)
+
+        # queue is not initialised - probably
+        if not self.queue:
+            return
+
+        await self.queue.put(input_rss_event)
+
+
+class RSSInputEventFactory:
+    """
+    Responsible for taking a FeedParserDict representing a new entity and transforming it
+    into a RSSInputEvent to go on the wire.
+    """
+
+    _logger: logging.Logger
+
+    def __init__(self) -> None:
+        self._logger = logging.getLogger(__name__ + "RSSInputEventFactory")
+
+    def __call__(
+        self, entry: feedparser.util.FeedParserDict, site_url: str, startup: bool = False
+    ) -> RSSInputEvent:
+        """
+        Parse an RSS entry into a RSSInputEvent and return.
+        """
+        # Some RSS entries do not confirm to the spec - so some creative parsing might be required
+        # Starting basic, and building up later
+
+        problem_list: List[str] = []
+
+        # guid - there are no rules for this syntax
+        # THUS ONLY THE COMBINATION OF GUID AND SITE_URL SHOULD BE ASSUMED UNIQUE
+        # This combination is used to determine if events have already been sent
+
+        input_rss_event = RSSInputEvent(
+            title=self.extract_title(entry=entry, problem_list=problem_list),
+            link=self.extract_link(entry=entry, problem_list=problem_list),
+            description=self.extract_description(entry=entry, problem_list=problem_list),
+            author=self.extract_author(entry=entry, problem_list=problem_list),
+            category=self.extract_category(entry=entry, problem_list=problem_list),
+            comments=self.extract_comments(entry=entry, problem_list=problem_list),
+            enclosure=self.extract_enclosure(entry=entry),
+            guid=self.extract_guid(entry=entry, site_url=site_url, problem_list=problem_list),
+            pub_date=self.extract_pubdate(
+                entry=entry, site_url=site_url, problem_list=problem_list
+            ),
+            source=self.extract_source(entry=entry, problem_list=problem_list),
+            site_url=site_url,
+            startup=startup,
+            entry=entry,
+        )
+
+        if problem_list:
+            self._logger.info(
+                "Bad parsing of entry \n%s\n \n%s", entry, "\n".join(problem_list)
+            )
+
+        return input_rss_event
+
     @staticmethod
-    def _extract_title(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
+    def extract_title(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
         """
         Extract and return the title from an entry.
         Adding any problems to the problem list.
@@ -374,7 +482,7 @@ class RSSInput(Input):
         return str(entry_title)
 
     @staticmethod
-    def _extract_link(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
+    def extract_link(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
         """
         Extract and return the link from an entry.
         Adding any problems to the problem list.
@@ -389,7 +497,7 @@ class RSSInput(Input):
         return str(entry_link)
 
     @staticmethod
-    def _extract_description(
+    def extract_description(
         entry: feedparser.util.FeedParserDict, problem_list: List[str]
     ) -> str:
         """
@@ -406,9 +514,7 @@ class RSSInput(Input):
         return str(entry_description)
 
     @staticmethod
-    def _extract_author(
-        entry: feedparser.util.FeedParserDict, problem_list: List[str]
-    ) -> str:
+    def extract_author(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
         try:
             entry_author = entry.author
         except AttributeError:
@@ -418,7 +524,7 @@ class RSSInput(Input):
         return str(entry_author)
 
     @staticmethod
-    def _extract_category(
+    def extract_category(
         entry: feedparser.util.FeedParserDict, problem_list: List[str]
     ) -> str:
         try:
@@ -430,7 +536,7 @@ class RSSInput(Input):
         return str(entry_category)
 
     @staticmethod
-    def _extract_comments(
+    def extract_comments(
         entry: feedparser.util.FeedParserDict, problem_list: List[str]
     ) -> str:
         try:
@@ -442,7 +548,7 @@ class RSSInput(Input):
         return str(entry_comments)
 
     @staticmethod
-    def _extract_enclosure(entry: feedparser.util.FeedParserDict) -> str:
+    def extract_enclosure(entry: feedparser.util.FeedParserDict) -> str:
         try:
             entry_enclosure = entry.enclosure
         except AttributeError:
@@ -451,11 +557,9 @@ class RSSInput(Input):
 
         return str(entry_enclosure)
 
-    def _extract_guid(
+    def extract_guid(
         self, entry: feedparser.util.FeedParserDict, site_url: str, problem_list: List[str]
     ) -> str:
-
-        entry_title = self._extract_title(entry=entry, problem_list=problem_list)
 
         # guid - there are no rules for this syntax
         # THUS ONLY THE COMBINATION OF GUID AND SITE_URL SHOULD BE ASSUMED UNIQUE
@@ -468,13 +572,17 @@ class RSSInput(Input):
                 f"{site_url} might be producing malformed RSS entries"
             )
 
+            entry_pubdate = self.extract_pubdate(
+                entry=entry, site_url=site_url, problem_list=problem_list
+            )
+
             # This is not a fantastic guid - but one needs to be set for internal tracking
-            entry_guid = f"{site_url}:{entry_title}"
+            entry_guid = f"{site_url}:{entry_pubdate}"
 
         return str(entry_guid)
 
     @staticmethod
-    def _extract_pubdate(
+    def extract_pubdate(
         entry: feedparser.util.FeedParserDict, site_url: str, problem_list: List[str]
     ) -> str:
         # pubDate - if this is not being set, something is badly wrong
@@ -490,9 +598,7 @@ class RSSInput(Input):
         return str(entry_pubdate)
 
     @staticmethod
-    def _extract_source(
-        entry: feedparser.util.FeedParserDict, problem_list: List[str]
-    ) -> str:
+    def extract_source(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
         # source
         try:
             entry_source = entry.source
@@ -501,49 +607,3 @@ class RSSInput(Input):
             entry_source = SOURCE_NOT_SET_STR
 
         return str(entry_source)
-
-    async def _send_entry(
-        self, entry: feedparser.util.FeedParserDict, site_url: str, startup: bool = False
-    ) -> None:
-        """
-        Parse an RSS entry and put the OutputEvent representing it on the wire.
-        """
-        # Some RSS entries do not confirm to the spec - so some creative parsing might be required
-        # Starting basic, and building up later
-
-        problem_list: List[str] = []
-
-        # guid - there are no rules for this syntax
-        # THUS ONLY THE COMBINATION OF GUID AND SITE_URL SHOULD BE ASSUMED UNIQUE
-        # This combination is used to determine if events have already been sent
-
-        input_rss_event = RSSInputEvent(
-            title=self._extract_title(entry=entry, problem_list=problem_list),
-            link=self._extract_link(entry=entry, problem_list=problem_list),
-            description=self._extract_description(entry=entry, problem_list=problem_list),
-            author=self._extract_author(entry=entry, problem_list=problem_list),
-            category=self._extract_category(entry=entry, problem_list=problem_list),
-            comments=self._extract_comments(entry=entry, problem_list=problem_list),
-            enclosure=self._extract_enclosure(entry=entry),
-            guid=self._extract_guid(
-                entry=entry, site_url=site_url, problem_list=problem_list
-            ),
-            pub_date=self._extract_pubdate(
-                entry=entry, site_url=site_url, problem_list=problem_list
-            ),
-            source=self._extract_source(entry=entry, problem_list=problem_list),
-            site_url=site_url,
-            startup=startup,
-            entry=entry,
-        )
-
-        if problem_list:
-            self._logger.info(
-                "Bad parsing of entry \n%s\n \n%s", entry, "\n".join(problem_list)
-            )
-
-        # queue is not initialised - probably
-        if not self.queue:
-            return
-
-        await self.queue.put(input_rss_event)
