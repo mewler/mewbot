@@ -156,7 +156,7 @@ class RSSInputState:
     _sites_started: Set[str]  # sites which have undergone startup
     _sent_entries: Mapping[str, Set[str]]  # Entries which have been put on the wire
 
-    def start(self):
+    def start(self) -> None:
         """
         Caculates all internal states based off _sites
         """
