@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Optional, Set, Sequence, Type, Any, Union, List, SupportsInt, Iterable
+from typing import (
+    Optional,
+    Set,
+    Sequence,
+    Type,
+    Any,
+    Union,
+    List,
+    SupportsInt,
+    Iterable,
+    Mapping,
+)
 
 import asyncio
 
@@ -143,7 +154,21 @@ class RSSInputState:
     _sites: List[str]  # A list of sites to poll for RSS update events
     _sites_iter: Iterable[str]
     _sites_started: Set[str]  # sites which have undergone startup
-    sent_entries: Set[str]  # Entries which have been put on the wire
+    _sent_entries: Mapping[str, Set[str]]  # Entries which have been put on the wire
+
+    def start(self):
+        """
+        Caculates all internal states based off _sites
+        """
+        self._sites_iter = cycle(iter(self._sites))
+
+        new_sent_entries = {}
+        for new_site in self._sites:
+            if new_site in self._sent_entries.keys():
+                new_sent_entries[new_site] = self._sent_entries[new_site]
+            else:
+                new_sent_entries[new_site] = set()
+        self._sent_entries = new_sent_entries
 
     @property
     def sites(self) -> List[str]:
@@ -152,7 +177,7 @@ class RSSInputState:
     @sites.setter
     def sites(self, new_sites: List[str]) -> None:
         self._sites = new_sites
-        self._sites_iter = cycle(iter(new_sites))
+        self.start()
 
     @property
     def sites_iter(self) -> Iterable[str]:
@@ -167,6 +192,21 @@ class RSSInputState:
         Record that a site has been successfully started.
         """
         self._sites_started.add(site_started)
+
+    def note_event_transmitted(self, site_url: str, site_uid: str) -> None:
+        """
+        Record that an entry with a uid has been put on the wire.
+        Now broken down by site so that we can more easily purge the old entries.
+        When they have been superceeded by new ones.
+        Otherwise they would just accumulate endlessly - a nasty memory leak.
+        """
+        self._sent_entries[site_url].add(site_uid)
+
+    def check_for_event(self, site_url: str, site_uid: str) -> bool:
+        """
+        Check to see if an event is recorded as having been sent for the specified site.
+        """
+        return site_uid in self._sent_entries[site_url]
 
 
 class RSSInput(Input):
@@ -194,8 +234,9 @@ class RSSInput(Input):
             _sites=sites,
             _sites_iter=cycle(iter(sites)),
             _sites_started=set(),
-            sent_entries=set(),
+            _sent_entries={},
         )
+        self.state.start()
 
         # Generare a warning if the polling interval is less than this
         self.short_warning_interval = 60
@@ -356,7 +397,7 @@ class RSSInput(Input):
         for _ in range(0, self.startup_queue_depth):
 
             entry_internal_id = self._get_entry_uid(entry=site_entries[_], site_url=site_url)
-            if entry_internal_id in self.state.sent_entries:
+            if self.state.check_for_event(site_url=site_url, site_uid=entry_internal_id):
                 self._logger.warning(
                     "entry_internal_id - %s - for entry - %s - from site - %s - "
                     "has been seen before!",
@@ -372,7 +413,7 @@ class RSSInput(Input):
                 # Not enough entries in the retrieved feed to exhaust startup requirements?
                 break
 
-            self.state.sent_entries.add(entry_internal_id)
+            self.state.note_event_transmitted(site_url=site_url, site_uid=entry_internal_id)
 
         self.state.note_site_started(site_url)
 
@@ -390,12 +431,13 @@ class RSSInput(Input):
 
             entry_uid = self._get_entry_uid(entry, site_url)
 
-            if entry_uid in self.state.sent_entries:
+            if self.state.check_for_event(site_url=site_url, site_uid=entry_uid):
                 break
 
             await self._send_entry(entry=entry, site_url=site_url, startup=False)
             transmitted_count += 1
-            self.state.sent_entries.add(self._get_entry_uid(entry=entry, site_url=site_url))
+
+            self.state.note_event_transmitted(site_url=site_url, site_uid=entry_uid)
 
         self._logger.info("%s entries from %s transmitted", transmitted_count, site_url)
 
