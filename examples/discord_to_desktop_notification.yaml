@@ -1,43 +1,33 @@
-apiVersion: v1
 kind: IOConfig
-module: mewbot.io.discord
-name: DiscordIO
-uuid: 1
+implementation: mewbot.io.discord.DiscordIO
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa00
 properties:
   token: "[token goes here]"
 
 ---
 
-apiVersion: v1
 kind: IOConfig
-module: mewbot.io.desktop_notification
-name: DesktopNotificationIO
-uuid: 2
+implementation: mewbot.io.desktop_notification.DesktopNotificationIO
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa01
 properties: {}
 
 ---
 
-apiVersion: v1
 kind: Behaviour
-module: mewbot.api.v1
-name: Behaviour
-uuid: 1
+implementation: mewbot.api.v1.Behaviour
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa02
 properties:
   name: 'Echo Inputs'
 triggers:
-  - apiVersion: v1
-    kind: Trigger
-    module: examples.discord_to_desktop_notification
-    name: DiscordTextCommandTrigger
-    uuid: 1
+  - kind: Trigger
+    implementation: examples.discord_to_desktop_notification.DiscordTextCommandTrigger
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa03
     properties:
       command: "!hello"
 conditions: []
 actions:
-  - apiVersion: v1
-    kind: Action
-    module: examples.discord_to_desktop_notification
-    name: DiscordMessageToNotificationAction
-    uuid: 1
+  - kind: Action
+    implementation: examples.discord_to_desktop_notification.DiscordMessageToNotificationAction
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa04
     properties:
       message: "world"

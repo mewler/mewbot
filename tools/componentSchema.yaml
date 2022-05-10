@@ -1,0 +1,125 @@
+$schema: http://json-schema.org/draft-07/schema
+$id: https://mewbot.com/schema.xml
+title: Mewbot Components
+description: Schema for validating component YAML
+
+oneOf:
+  - $ref: "#/definitions/Behaviour"
+  - $ref: "#/definitions/IOConfig"
+
+$defs:
+  IOConfig:
+    $id: "#/definitions/IOConfig"
+    title: Component
+    type: object
+    additionalProperties: false
+    properties:
+      kind:
+        type: string
+        description: The type or role of this component
+        enum:
+          - IOConfig
+        examples:
+          - IOConfig
+      implementation:
+        $ref: "#/definitions/Implementation"
+      uuid:
+        $ref: "#/definitions/UUID"
+      properties:
+        $ref: "#/definitions/Properties"
+    required:
+      - kind
+      - implementation
+      - uuid
+      - properties
+
+  Behaviour:
+    $id: "#/definitions/Behaviour"
+    title: Behaviour
+    type: object
+    additionalProperties: false
+    properties:
+      kind:
+        type: string
+        enum:
+          - Behaviour
+      implementation:
+        $ref: "#/definitions/Implementation"
+      uuid:
+        $ref: "#/definitions/UUID"
+      properties:
+        $ref: "#/definitions/Properties"
+      triggers:
+        type: array
+        items:
+          $ref: "#/definitions/BehaviourComponent"
+          properties:
+            kind:
+              enum: [Trigger]
+      conditions:
+        type: array
+        items:
+          $ref: "#/definitions/BehaviourComponent"
+          properties:
+            kind:
+              enum: [Condition]
+      actions:
+        type: array
+        items:
+          $ref: "#/definitions/BehaviourComponent"
+          properties:
+            kind:
+              enum: [Action]
+    required:
+      - kind
+      - implementation
+      - uuid
+      - properties
+      - triggers
+      - conditions
+      - actions
+
+  BehaviourComponent:
+    $id: "#/definitions/BehaviourComponent"
+    title: Component
+    additionalProperties: false
+    properties:
+      kind:
+        type: string
+        description: The type or role of this component
+        enum:
+          - Trigger
+          - Condition
+          - Action
+        examples:
+          - Trigger
+          - Condition
+          - Action
+      implementation:
+        $ref: "#/definitions/Implementation"
+      uuid:
+        $ref: "#/definitions/UUID"
+      properties:
+        $ref: "#/definitions/Properties"
+    required:
+      - kind
+      - implementation
+      - uuid
+      - properties
+
+  Implementation:
+    $id: "#/definitions/Implementation"
+    type: string
+    description: The python class to use for this component
+    pattern: "[a-z0-9_\\.]+\\.[A-Za-z0-9]+"
+
+  UUID:
+    $id: "#/definitions/UUID"
+    type: string
+    pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+
+  Properties:
+    $id: "#/definitions/Properties"
+    type: object
+    description: The settings of the implementation class
+    additionalProperties: true

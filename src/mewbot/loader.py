@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Type, Any, TextIO
+from typing import Any, TextIO, Type
 
 import importlib
 import sys
 import yaml
 
 from mewbot.bot import Bot
-from mewbot.component import ConfigBlock, BehaviourConfigBlock
+from mewbot.config import ConfigBlock, BehaviourConfigBlock
 from mewbot.core import (
     Component,
     ComponentKind,
@@ -33,6 +33,10 @@ def assert_message(obj: Any, interface: Type[Any]) -> str:
 
 
 def configure_bot(name: str, stream: TextIO) -> Bot:
+    """Loads a series of components from a YAML file to crate a bot
+
+    The YAML is expected to be a series of IOConfig, DataSource, and Behaviour blocks."""
+
     bot = Bot(name)
     number = 0
 
@@ -44,11 +48,11 @@ def configure_bot(name: str, stream: TextIO) -> Bot:
                 f"Document {number} missing some keys: {_REQUIRED_KEYS.difference(document.keys())}"
             )
 
-        if document["kind"] == ComponentKind.BEHAVIOUR:
+        if document["kind"] == ComponentKind.Behaviour:
             bot.add_behaviour(load_behaviour(document))
-        if document["kind"] == ComponentKind.DATASOURCE:
+        if document["kind"] == ComponentKind.DataSource:
             ...
-        if document["kind"] == ComponentKind.IO_CONFIG:
+        if document["kind"] == ComponentKind.IOConfig:
             component = load_component(document)
             assert isinstance(component, IOConfigInterface), assert_message(
                 component, IOConfigInterface
@@ -59,6 +63,8 @@ def configure_bot(name: str, stream: TextIO) -> Bot:
 
 
 def load_behaviour(config: BehaviourConfigBlock) -> BehaviourInterface:
+    """Creates a behaviour and its components based on a configuration block"""
+
     behaviour = load_component(config)
 
     assert isinstance(behaviour, BehaviourInterface)
@@ -86,31 +92,23 @@ def load_behaviour(config: BehaviourConfigBlock) -> BehaviourInterface:
 
 
 def load_component(config: ConfigBlock) -> Component:
+    """Creates a component based on a configuration block"""
+
     # Ensure that the object we have been passed contains all required fields.
     if not _REQUIRED_KEYS.issubset(config.keys()):
         raise ValueError(
             f"Config missing some keys: {_REQUIRED_KEYS.difference(config.keys())}"
         )
 
-    # Load the module the component is expected to be in.
-    # This happens first as it may cause API versions to be registered for the first time.
-    if config["module"] not in sys.modules:
-        importlib.import_module(config["module"])
+    # Identify the kind of component we should be loading, and the interface that implies.
+    try:
+        kind = ComponentKind[config["kind"]]
+        interface = ComponentKind.interface(kind)
+    except KeyError as err:
+        raise ValueError(f"Invalid component kind {config['kind']}") from err
 
-    if not ComponentKind.has_value(config["kind"]):
-        raise ValueError(f"Invalid component kind {config['kind']}")
-
-    kind = ComponentKind(config["kind"])
-    interface = ComponentKind.interface(kind)
-
-    module = sys.modules[config["module"]]
-
-    if not hasattr(module, config["name"]):
-        raise AttributeError(
-            f"Unable to find implementation {config['name']} in module {config['module']}"
-        )
-
-    target_class: Type[Any] = getattr(module, config["name"])
+    # Locate the implementation class to be loaded
+    target_class = get_implementation(config["implementation"])
 
     # Verify that the implementation class matches the interface we got from
     # the `kind:` hint.
@@ -119,6 +117,7 @@ def load_component(config: ConfigBlock) -> Component:
             f"Class {target_class} does not implement {interface}, requested by {config}"
         )
 
+    # Create the class instance, passing in the properties.
     component = target_class.__call__(uid=config["uuid"], **config["properties"])
 
     # Verify the instance implements a valid interface.
@@ -136,3 +135,24 @@ def load_component(config: ConfigBlock) -> Component:
     )
 
     return component
+
+
+def get_implementation(implementation: str) -> Type[Any]:
+    """Gets a Class object from a module based on a fully-qualified name
+
+    This will attempt to load the module if it is not already loaded"""
+
+    # Load the module the component is expected to be in.
+    module_name, class_name = implementation.rsplit(".", 1)
+
+    if module_name not in sys.modules:
+        importlib.import_module(module_name)
+
+    module = sys.modules[module_name]
+
+    if not hasattr(module, class_name):
+        raise TypeError(f"Unable to find implementation {class_name} in module {module_name}")
+
+    target_class: Type[Component] = getattr(module, class_name)
+
+    return target_class

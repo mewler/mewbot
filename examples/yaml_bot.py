@@ -10,10 +10,8 @@ def main() -> None:
     yaml_demo = load_component(
         {
             "kind": "Condition",
-            "apiVersion": "v1",
-            "module": "mewbot.demo",
-            "name": "Foo",
-            "uuid": "3f7c493bce054566b90654ece62804c1",
+            "implementation": "mewbot.demo.Foo",
+            "uuid": "3f7c493b-ce05-4566-b906-54ece62804c1",
             "properties": {"channel": "cat"},
         }
     )
