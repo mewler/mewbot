@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Set, Type, Dict, Any
 
-from mewbot.core import InputEvent, OutputEvent
-from mewbot.api.v1 import Condition, Trigger, Action
+from mewbot.api.v1 import Condition, Trigger, Action, InputEvent, OutputEvent
 
 
 class Foo(Condition):

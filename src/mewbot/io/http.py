@@ -19,7 +19,7 @@ import time
 
 from aiohttp import web
 
-from mewbot.core import InputEvent
+from mewbot.api.v1 import InputEvent
 from mewbot.io.socket import SocketIO, SocketInput
 
 

@@ -9,8 +9,7 @@ import logging
 import sys
 import subprocess
 
-from mewbot.core import OutputEvent
-from mewbot.api.v1 import IOConfig, Input, Output
+from mewbot.api.v1 import IOConfig, Input, Output, OutputEvent
 
 try:
     from win10toast import ToastNotifier  # type: ignore

@@ -9,8 +9,7 @@ import logging
 
 import discord  # type: ignore
 
-from mewbot.core import InputEvent, OutputEvent
-from mewbot.api.v1 import IOConfig, Input, Output
+from mewbot.api.v1 import IOConfig, Input, Output, InputEvent, OutputEvent
 
 
 @dataclasses.dataclass

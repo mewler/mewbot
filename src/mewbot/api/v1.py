@@ -198,3 +198,16 @@ class Behaviour(Component):
         config["actions"] = [x.serialise() for x in self.actions]
 
         return config  # type: ignore
+
+
+__all__ = [
+    "IOConfig",
+    "Input",
+    "Output",
+    "Behaviour",
+    "Trigger",
+    "Condition",
+    "Action",
+    "InputEvent",
+    "OutputEvent",
+]

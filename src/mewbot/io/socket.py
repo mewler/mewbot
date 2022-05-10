@@ -9,8 +9,7 @@ import dataclasses
 import logging
 import time
 
-from mewbot.core import InputEvent
-from mewbot.api.v1 import Input, IOConfig, Output
+from mewbot.api.v1 import Input, InputEvent, IOConfig, Output
 
 
 @dataclasses.dataclass
