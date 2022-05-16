@@ -1,35 +1,25 @@
-apiVersion: v1
 kind: IOConfig
-module: mewbot.io.rss
-name: RSSIO
-uuid: 1
+implementation: mewbot.io.rss.RSSIO
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa00
 properties:
   sites: ["https://www.theguardian.com/world/rss", "https://www.engadget.com/rss.xml" ]
   polling_every: 60
 
 ---
 
-
-apiVersion: v1
 kind: Behaviour
-module: mewbot.api.v1
-name: Behaviour
-uuid: 1
+implementation: mewbot.api.v1.Behaviour
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa02
 properties:
-  name: 'Echo Inputs'
+  name: 'RSS Printer'
 triggers:
-  - apiVersion: v1
-    kind: Trigger
-    module: mewbot.demo
-    name: AllEventTrigger
-    uuid: 1
+  - kind: Trigger
+    implementation: mewbot.demo.AllEventTrigger
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa03
     properties: { }
 conditions: []
 actions:
-  - apiVersion: v1
-    kind: Action
-    module: examples.rss_input
-    name: RSSPrintAction
-    uuid: 1
+  - kind: Action
+    implementation: examples.rss_input.RSSPrintAction
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa04
     properties: { }
-
