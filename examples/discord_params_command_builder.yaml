@@ -1,0 +1,24 @@
+kind: IOConfig
+implementation: mewbot.io.discord.DiscordIO
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa00
+properties:
+  token: "[token goes here]"
+
+---
+
+kind: Behaviour
+implementation: mewbot.api.v1.Behaviour
+uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa02
+properties:
+  name: 'Echo Inputs'
+triggers:
+  - kind: Trigger
+    implementation: examples.discord_params_command_builder.TestDiscordTrigger
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa03
+    properties: {}
+conditions: []
+actions:
+  - kind: Action
+    implementation: examples.discord_params_command_builder.TestDiscordAction
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa04
+    properties: {}
