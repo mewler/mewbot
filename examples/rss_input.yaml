@@ -17,9 +17,13 @@ triggers:
     implementation: mewbot.demo.AllEventTrigger
     uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa03
     properties: { }
+  - kind: Trigger
+    implementation: mewbot.demo.AllEventTrigger
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa04
+    properties: { }
 conditions: []
 actions:
   - kind: Action
     implementation: examples.rss_input.RSSPrintAction
-    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa04
+    uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa05
     properties: { }
