@@ -23,6 +23,7 @@ class TestToolchain(ToolChain):
         if self.is_ci:
             # Term-only
             args.append("--cov-report=term")
+            args.append("--junitxml=junit.xml")
         else:
             # Output to term
             #  term-missing gives us line numbers where things are missing

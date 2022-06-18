@@ -36,3 +36,5 @@ jobs:
 
       - name: Run Linters
         run: python3 -m tools.lint
+        env:
+          PYTHONPATH: "./src:."

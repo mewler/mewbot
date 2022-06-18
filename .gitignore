@@ -27,3 +27,4 @@ examples/TrivialDiscordBot/secrets.json
 .coverage
 /.coverage_html/
 /.pytest_cache/
+/junit.xml
