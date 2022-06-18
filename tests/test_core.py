@@ -14,49 +14,40 @@ from mewbot.core import (
 # pragma pylint: disable=R0903
 #  Disable "too few public methods" for test cases - most test files will be classes used for
 #  grouping and then individual tests alongside these
-# pragma pylint: disable=R0201
-#  Disable "no self use" for functions. These functions will not be used internally as they are
-#  automatically called by pytest as it seeks and searches for tests.
 
 
 class TestComponent:
-    def test_hasvalue(self) -> None:
-        assert ComponentKind.has_value(ComponentKind.BEHAVIOUR)
-
-    def test_hasvalue_notnull(self) -> None:
-        assert ~ComponentKind.has_value("NULL")
-
     # Test a set of what interface passing succeeds and fails
     def test_componentkind_interface_map_behaviour(self) -> None:
         assert (
-            ComponentKind.interface(ComponentKind(ComponentKind.BEHAVIOUR))
+            ComponentKind.interface(ComponentKind(ComponentKind.Behaviour))
             == BehaviourInterface
         )
 
     def test_componentkind_interface_map_trigger(self) -> None:
         assert (
-            ComponentKind.interface(ComponentKind(ComponentKind.TRIGGER)) == TriggerInterface
+            ComponentKind.interface(ComponentKind(ComponentKind.Trigger)) == TriggerInterface
         )
 
     def test_componentkind_interface_map_condition(self) -> None:
         assert (
-            ComponentKind.interface(ComponentKind(ComponentKind.CONDITION))
+            ComponentKind.interface(ComponentKind(ComponentKind.Condition))
             == ConditionInterface
         )
 
     def test_componentkind_interface_map_action(self) -> None:
-        assert ComponentKind.interface(ComponentKind(ComponentKind.ACTION)) == ActionInterface
+        assert ComponentKind.interface(ComponentKind(ComponentKind.Action)) == ActionInterface
 
     def test_componentkind_interface_map_ioconfig(self) -> None:
         assert (
-            ComponentKind.interface(ComponentKind(ComponentKind.IO_CONFIG))
+            ComponentKind.interface(ComponentKind(ComponentKind.IOConfig))
             == IOConfigInterface
         )
 
     def test_componentkind_interface_map_datasource(self) -> None:
         with pytest.raises(ValueError):  # @UndefinedVariable
-            _ = ComponentKind.interface(ComponentKind(ComponentKind.DATASOURCE))
+            _ = ComponentKind.interface(ComponentKind(ComponentKind.DataSource))
 
     def test_componentkind_interface_map_template(self) -> None:
         with pytest.raises(ValueError):  # @UndefinedVariable
-            _ = ComponentKind.interface(ComponentKind(ComponentKind.TEMPLATE))
+            _ = ComponentKind.interface(ComponentKind(ComponentKind.Template))
