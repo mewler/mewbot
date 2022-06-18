@@ -6,7 +6,7 @@ import yaml
 
 from mewbot.loader import load_component
 from mewbot.core import ComponentKind
-from mewbot.component import ConfigBlock
+from mewbot.config import ConfigBlock
 from mewbot.io.http import HTTPServlet
 
 

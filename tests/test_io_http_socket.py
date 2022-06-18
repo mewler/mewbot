@@ -7,7 +7,7 @@ import copy
 
 from tests.common import ExampleHttpPostIOConfig
 
-from mewbot.component import Component
+from mewbot.core import Component
 from mewbot.io.http import HTTPServlet
 from mewbot.io.socket import SocketIO
 from mewbot.api.v1 import IOConfig

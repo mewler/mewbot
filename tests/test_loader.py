@@ -8,8 +8,8 @@ from tests.common import BaseTestClassWithConfig, ExampleHttpPostIOConfig
 from mewbot.loader import configure_bot, load_behaviour, load_component
 
 from mewbot.bot import Bot
-from mewbot.core import ComponentKind, BehaviourInterface
-from mewbot.component import ConfigBlock, BehaviourConfigBlock, Component
+from mewbot.core import ComponentKind, BehaviourInterface, Component
+from mewbot.config import ConfigBlock, BehaviourConfigBlock
 from mewbot.io.http import HTTPServlet
 from mewbot.io.socket import SocketIO
 from mewbot.api.v1 import IOConfig
@@ -28,7 +28,7 @@ class TestLoaderHttpsPost(ExampleHttpPostIOConfig):
     def test_working(self) -> None:
         self.cache_config()
         component = load_component(self.config)
-        assert isinstance(component, Component)
+        assert isinstance(component, IOConfig)
 
     # Test that the loading is accurate
     def test_loading_component_type(self) -> None:
