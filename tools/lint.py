@@ -6,41 +6,21 @@ from typing import Generator, Set
 
 import os
 import subprocess
-import sys
 
-from tools.common import Annotation, github_list, run_utility
+from tools.common import Annotation, ToolChain
 
 
 LEVELS: Set[str] = {"notice", "warning", "error"}
 
 
-class LintToolchain:
+class LintToolchain(ToolChain):
     """Wrapper class for running linting tools, and outputting GitHub annotations"""
 
-    folders: Set[str]
-    is_ci: bool
-    success: bool
-
-    def __init__(self, *folders: str, in_ci: bool) -> None:
-        self.folders = set(folders)
-        self.is_ci = in_ci
-        self.success = True
-
-    def __call__(self) -> Generator[Annotation, None, None]:
+    def run(self) -> Generator[Annotation, None, None]:
         yield from self.lint_black()
         yield from self.lint_flake8()
         yield from self.lint_mypy()
         yield from self.lint_pylint()
-
-    def run_tool(self, name: str, *args: str) -> subprocess.CompletedProcess[bytes]:
-        arg_list = list(args)
-        arg_list.extend(self.folders)
-
-        run_result = run_utility(name, arg_list, self.is_ci)
-
-        self.success = self.success and (run_result.returncode == 0)
-
-        return run_result
 
     def lint_black(self) -> Generator[Annotation, None, None]:
         args = ["black"]
@@ -159,9 +139,4 @@ if __name__ == "__main__":
     is_ci = "GITHUB_ACTION" in os.environ
 
     linter = LintToolchain("src", "examples", "tests", "tools", in_ci=is_ci)
-    issues = list(linter())
-
-    if is_ci:
-        github_list(issues)
-
-    sys.exit(not linter.success or len(issues) > 0)
+    linter()
