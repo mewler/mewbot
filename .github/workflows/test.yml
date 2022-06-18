@@ -1,8 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Benedict Harcourt <ben.harcourt@harcourtprogramming.co.uk>
-#
-# SPDX-License-Identifier: BSD-2-Clause
-
-name: Linting
+name: Testing
 
 on:
   push:
@@ -14,18 +10,23 @@ on:
       - published
 
 jobs:
-  lint:
-    name: Lint Python code
+  test:
+    name: Test Python code
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        version: ["3.9", "3.10"]
+      fail-fast: false
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Python 3.9
+      - name: Setup Python ${{ matrix.version }}
         uses: actions/setup-python@v3
         with:
-          python-version: 3.9
+          python-version: ${{ matrix.version }}
           cache: pip
           cache-dependency-path: |
             requirements.txt
@@ -34,7 +35,13 @@ jobs:
       - name: Install dependencies
         run:  pip install -r requirements-dev.txt
 
-      - name: Run Linters
-        run: python3 -m tools.lint
+      - name: Run Tests
+        run: python3 -m tools.test
         env:
           PYTHONPATH: "./src:."
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v3
+        if: always() # always run even if the previous step fails
+        with:
+          report_paths: 'junit.xml'

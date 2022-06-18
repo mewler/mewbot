@@ -4,79 +4,23 @@ from __future__ import annotations
 
 from typing import Generator, Set
 
-import dataclasses
 import os
 import subprocess
-import sys
+
+from tools.common import Annotation, ToolChain
 
 
 LEVELS: Set[str] = {"notice", "warning", "error"}
 
 
-@dataclasses.dataclass
-class Annotation:
-    """Schema for a github action annotation, representing an error"""
-
-    level: str
-    file: str
-    line: int
-    col: int
-    title: str
-    message: str
-
-    def __str__(self) -> str:
-        mess = self.message.replace("\n", "%0A")
-        return (
-            f"::{self.level} file={self.file},line={self.line},"
-            f"col={self.col},title={self.title}::{mess}"
-        )
-
-    def __lt__(self, other: Annotation) -> bool:
-        if not isinstance(other, Annotation):
-            return False
-
-        return self.file < other.file or self.file == other.file and self.line < other.line
-
-
-class LintToolchain:
+class LintToolchain(ToolChain):
     """Wrapper class for running linting tools, and outputting GitHub annotations"""
 
-    folders: Set[str]
-    is_ci: bool
-    success: bool
-
-    def __init__(self, *folders: str, ci: bool) -> None:
-        self.folders = set(folders)
-        self.is_ci = ci
-        self.success = True
-
-    def __call__(self) -> Generator[Annotation, None, None]:
+    def run(self) -> Generator[Annotation, None, None]:
         yield from self.lint_black()
         yield from self.lint_flake8()
         yield from self.lint_mypy()
         yield from self.lint_pylint()
-
-    def run_tool(self, name: str, *args: str) -> subprocess.CompletedProcess[bytes]:
-        arg_list = list(args)
-        arg_list.extend(self.folders)
-
-        run = subprocess.run(
-            arg_list, stdin=subprocess.DEVNULL, capture_output=self.is_ci, check=False
-        )
-
-        if run.returncode:
-            self.success = False
-
-        if self.is_ci:
-            print(f"::group::{name}")
-            sys.stdout.write(run.stdout.decode("utf-8"))
-            sys.stdout.write(run.stderr.decode("utf-8"))
-            print("::endgroup::")
-        else:
-            run.stdout = b""
-            run.stderr = b""
-
-        return run
 
     def lint_black(self) -> Generator[Annotation, None, None]:
         args = ["black"]
@@ -194,15 +138,5 @@ def lint_black_diffs(
 if __name__ == "__main__":
     is_ci = "GITHUB_ACTION" in os.environ
 
-    linter = LintToolchain("src", "examples", "tools", ci=is_ci)
-    issues = list(linter())
-
-    if is_ci:
-        print("::group::Annotations")
-        for issue in sorted(issues):
-            print(issue)
-        print("::endgroup::")
-
-        print("Total Issues:", len(issues))
-
-    sys.exit(not linter.success or len(issues) > 0)
+    linter = LintToolchain("src", "examples", "tests", "tools", in_ci=is_ci)
+    linter()
