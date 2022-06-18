@@ -16,7 +16,6 @@ jobs=4
 [tool.pylint."MESSAGES CONTROL"]
 
 disable=[
-    "bad-continuation",
     "missing-module-docstring",
     "missing-class-docstring",
     "missing-function-docstring",
