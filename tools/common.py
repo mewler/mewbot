@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, TypedDict
+from typing import List
 
 import dataclasses
 import subprocess
@@ -41,20 +41,12 @@ def github_list(issues: List[Annotation]) -> None:
     print("Total Issues:", len(issues))
 
 
-class TypedDictRunUtility(TypedDict):
-    success: bool
-    completedProcess: subprocess.CompletedProcess[bytes]
-
-
-def run_utility(name: str, arg_list: List[str], is_ci: bool) -> TypedDictRunUtility:
+def run_utility(
+    name: str, arg_list: List[str], is_ci: bool
+) -> subprocess.CompletedProcess[bytes]:
     run = subprocess.run(
         arg_list, stdin=subprocess.DEVNULL, capture_output=is_ci, check=False
     )
-
-    if run.returncode:
-        success = False
-    else:
-        success = True
 
     if is_ci:
         print(f"::group::{name}")
@@ -65,4 +57,4 @@ def run_utility(name: str, arg_list: List[str], is_ci: bool) -> TypedDictRunUtil
         run.stdout = b""
         run.stderr = b""
 
-    return {"success": success, "completedProcess": run}
+    return run

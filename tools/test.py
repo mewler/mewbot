@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from __future__ import annotations
 from typing import List, Generator
 
@@ -24,9 +26,9 @@ class TestToolchain:
 
         run_result = run_utility(name, arg_list, self.is_ci)
 
-        self.success = run_result["success"]
+        self.success = self.success and (run_result.returncode == 0)
 
-        return run_result["completedProcess"]
+        return run_result
 
     def run_tests(self) -> Generator[Annotation, None, None]:
         args = self.build_pytest_args()
@@ -89,9 +91,8 @@ class TestToolchain:
                     split_output = output.split(":")
                     this_filepath = split_output[0]
                     this_line = int(split_output[1])
-                    this_err = split_output[2].strip()
-                    if this_err == "":
-                        this_err = "OtherError"
+                    this_err = split_output[2].strip() or "OtherError"
+
                     yield Annotation(
                         "error", this_filepath, this_line, 1, this_err, current_test
                     )

@@ -38,9 +38,9 @@ class LintToolchain:
 
         run_result = run_utility(name, arg_list, self.is_ci)
 
-        self.success = run_result["success"]
+        self.success = self.success and (run_result.returncode == 0)
 
-        return run_result["completedProcess"]
+        return run_result
 
     def lint_black(self) -> Generator[Annotation, None, None]:
         args = ["black"]
