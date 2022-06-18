@@ -8,6 +8,6 @@ black~=22.1
 flake8~=4.0
 mypy>=0.940
 pylint~=2.13
-reuse~=0.14
+reuse~=1.0
 
 types-PyYAML~=6.0

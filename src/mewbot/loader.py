@@ -25,6 +25,8 @@ _REQUIRED_KEYS = set(ConfigBlock.__annotations__.keys())  # pylint: disable=no-m
 
 
 def assert_message(obj: Any, interface: Type[Any]) -> str:
+    """Generates the assert error message for an incomplete interface"""
+
     uuid = getattr(obj, "uuid", "<unknown>")
     return (
         f"Loaded component did not implemented expected interface {interface}. "
@@ -118,7 +120,7 @@ def load_component(config: ConfigBlock) -> Component:
         )
 
     # Create the class instance, passing in the properties.
-    component = target_class.__call__(uid=config["uuid"], **config["properties"])
+    component = target_class(uid=config["uuid"], **config["properties"])
 
     # Verify the instance implements a valid interface.
     # The second call is to reassure the linter that the types are correct.
