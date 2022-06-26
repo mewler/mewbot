@@ -15,7 +15,8 @@ from mewbot.api.v1 import IOConfig, Input, Output, InputEvent, OutputEvent
 @dataclasses.dataclass
 class DiscordInputEvent(InputEvent):
     """
-    Class which represents a new message being detected on any of the channels that the bot is connected to.
+    Class which represents a new message being detected on any of the channels that the bot is
+    connected to.
     Ideally should contain enough messages/objects to actually respond to a message.
     """
 
@@ -122,8 +123,11 @@ class DiscordInput(Input, discord.Client):  # type: ignore
         """
         Triggered when a member joins one of the guilds that the bot is monitoring.
         """
-        self._logger.info("New member \"%s\" has been detected joining\"%s\"",
-                          str(member.mention), str(member.guild.name))
+        self._logger.info(
+            'New member "%s" has been detected joining"%s"',
+            str(member.mention),
+            str(member.guild.name),
+        )
 
         if not self.queue:
             return
