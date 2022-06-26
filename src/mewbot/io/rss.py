@@ -483,18 +483,55 @@ class RSSInputEventFactory:
         # This combination is used to determine if events have already been sent
 
         input_rss_event = RSSInputEvent(
-            title=self.extract_title(entry=entry, problem_list=problem_list),
-            link=self.extract_link(entry=entry, problem_list=problem_list),
-            description=self.extract_description(entry=entry, problem_list=problem_list),
-            author=self.extract_author(entry=entry, problem_list=problem_list),
-            category=self.extract_category(entry=entry, problem_list=problem_list),
-            comments=self.extract_comments(entry=entry, problem_list=problem_list),
-            enclosure=self.extract_enclosure(entry=entry),
+            title=self.extract_field(
+                entry=entry,
+                attr_name="title",
+                default=TITLE_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
+            link=self.extract_field(
+                entry=entry,
+                attr_name="link",
+                default=LINK_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
+            description=self.extract_field(
+                entry=entry,
+                attr_name="description",
+                default=DESCRIPTION_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
+            author=self.extract_field(
+                entry=entry,
+                attr_name="author",
+                default=AUTHOR_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
+            category=self.extract_field(
+                entry=entry,
+                attr_name="category",
+                default=CATEGORY_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
+            comments=self.extract_field(
+                entry=entry,
+                attr_name="comments",
+                default=COMMENTS_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
+            enclosure=self.extract_field(
+                entry=entry, attr_name="enclosure", default="", problem_list=[]
+            ),  # enclosure is optional, so not bothering to log
             guid=self.extract_guid(entry=entry, site_url=site_url, problem_list=problem_list),
             pub_date=self.extract_pubdate(
                 entry=entry, site_url=site_url, problem_list=problem_list
             ),
-            source=self.extract_source(entry=entry, problem_list=problem_list),
+            source=self.extract_field(
+                entry=entry,
+                attr_name="source",
+                default=SOURCE_NOT_SET_STR,
+                problem_list=problem_list,
+            ),
             site_url=site_url,
             startup=startup,
             entry=entry,
@@ -508,85 +545,22 @@ class RSSInputEventFactory:
         return input_rss_event
 
     @staticmethod
-    def extract_title(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
-        """
-        Extract and return the title from an entry.
-        Adding any problems to the problem list.
-        """
-        # title
-        try:
-            entry_title = entry.title
-        except AttributeError:
-            problem_list.append("entry did not possess a title attribute")
-            entry_title = TITLE_NOT_SET_STR
-
-        return str(entry_title)
-
-    @staticmethod
-    def extract_link(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
-        """
-        Extract and return the link from an entry.
-        Adding any problems to the problem list.
-        """
-        # link
-        try:
-            entry_link = entry.link
-        except AttributeError:
-            problem_list.append("entry did not possess a link attribute")
-            entry_link = LINK_NOT_SET_STR
-
-        return str(entry_link)
-
-    @staticmethod
-    def extract_description(
-        entry: feedparser.util.FeedParserDict, problem_list: List[str]
+    def extract_field(
+        entry: feedparser.util.FeedParserDict,
+        attr_name: str,
+        default: str,
+        problem_list: List[str],
     ) -> str:
         """
-        Extract and return the link from an entry.
-        Adding any problems to the problem list.
+        Extract a field from an rss entry.
         """
-        # description
         try:
-            entry_description = entry.description
+            entry_attr = getattr(entry, attr_name)
         except AttributeError:
-            problem_list.append("entry did not possess a description attribute")
-            entry_description = DESCRIPTION_NOT_SET_STR
+            problem_list.append(f"entry did not possess a {attr_name} attribute")
+            entry_attr = default
 
-        return str(entry_description)
-
-    @staticmethod
-    def extract_author(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
-        try:
-            entry_author = entry.author
-        except AttributeError:
-            problem_list.append("entry did not possess an author attribute")
-            entry_author = AUTHOR_NOT_SET_STR
-
-        return str(entry_author)
-
-    @staticmethod
-    def extract_category(
-        entry: feedparser.util.FeedParserDict, problem_list: List[str]
-    ) -> str:
-        try:
-            entry_category = entry.category
-        except AttributeError:
-            problem_list.append("entry did not possess a category attribute")
-            entry_category = CATEGORY_NOT_SET_STR
-
-        return str(entry_category)
-
-    @staticmethod
-    def extract_comments(
-        entry: feedparser.util.FeedParserDict, problem_list: List[str]
-    ) -> str:
-        try:
-            entry_comments = entry.comments
-        except AttributeError:
-            problem_list.append("entry did not possess a comments attribute")
-            entry_comments = COMMENTS_NOT_SET_STR
-
-        return str(entry_comments)
+        return str(entry_attr)
 
     @staticmethod
     def extract_enclosure(entry: feedparser.util.FeedParserDict) -> str:
@@ -601,6 +575,9 @@ class RSSInputEventFactory:
     def extract_guid(
         self, entry: feedparser.util.FeedParserDict, site_url: str, problem_list: List[str]
     ) -> str:
+        """
+        We always need some form of guid - so using a method with a fallback
+        """
 
         # guid - there are no rules for this syntax
         # THUS ONLY THE COMBINATION OF GUID AND SITE_URL SHOULD BE ASSUMED UNIQUE
@@ -610,7 +587,7 @@ class RSSInputEventFactory:
         except AttributeError:
             problem_list.append(
                 f"entry did not possess a guid - "
-                f"{site_url} might be producing malformed RSS entries"
+                f"{site_url} is producing malformed RSS entries"
             )
 
             entry_pubdate = self.extract_pubdate(
@@ -622,29 +599,19 @@ class RSSInputEventFactory:
 
         return str(entry_guid)
 
-    @staticmethod
     def extract_pubdate(
-        entry: feedparser.util.FeedParserDict, site_url: str, problem_list: List[str]
+        self, entry: feedparser.util.FeedParserDict, site_url: str, problem_list: List[str]
     ) -> str:
         # pubDate - if this is not being set, something is badly wrong
         try:
             entry_pubdate = entry.pubDate
         except AttributeError:
-            problem_list.append(
+            wrn_str = (
                 f"entry did not possess a pubDate - "
                 f"{site_url} might be producing malformed RSS entries"
             )
+            self._logger.warning(wrn_str)
+            problem_list.append(wrn_str)
             entry_pubdate = PUBDATE_NOT_SET_STR
 
         return str(entry_pubdate)
-
-    @staticmethod
-    def extract_source(entry: feedparser.util.FeedParserDict, problem_list: List[str]) -> str:
-        # source
-        try:
-            entry_source = entry.source
-        except AttributeError:
-            problem_list.append("entry did not possess a src")
-            entry_source = SOURCE_NOT_SET_STR
-
-        return str(entry_source)
