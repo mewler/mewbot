@@ -1,9 +1,8 @@
 from typing import Type
 
-from mewbot.io.rss import RSSIO
-
 from tests.common import BaseTestClassWithConfig
 
+from mewbot.io.rss import RSSIO
 from mewbot.api.v1 import IOConfig
 
 
