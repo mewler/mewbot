@@ -34,6 +34,20 @@ class DiscordUserJoinInputEvent(InputEvent):
 
 
 @dataclasses.dataclass
+class DiscordMessageEditInputEvent(InputEvent):
+    """
+    Class which represents an edit to an existing message being detected on any of the channels
+    that the bot is connected to.
+    """
+
+    text_before: str
+    message_before: discord.Message
+
+    text_after: str
+    message_after: discord.Message
+
+
+@dataclasses.dataclass
 class DiscordOutputEvent(OutputEvent):
     """
     Currently just used to reply to an input event.
@@ -88,7 +102,7 @@ class DiscordInput(Input, discord.Client):  # type: ignore
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
         """Defines the set of input events this Input class can produce."""
-        return {DiscordInputEvent, DiscordUserJoinInputEvent}
+        return {DiscordInputEvent, DiscordUserJoinInputEvent, DiscordMessageEditInputEvent}
 
     async def run(self) -> None:
         """
@@ -133,6 +147,24 @@ class DiscordInput(Input, discord.Client):  # type: ignore
             return
 
         await self.queue.put(DiscordUserJoinInputEvent(member=member))
+
+    async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
+        """
+        Triggered when a message is edited on any of the channels which the bot is monitoring.
+        """
+        self._logger.info("Message edit - %s changed to %s", before.content, after.content)
+
+        if not self.queue:
+            return
+
+        await self.queue.put(
+            DiscordMessageEditInputEvent(
+                text_before=before.content,
+                message_before=before,
+                text_after=after.content,
+                message_after=after,
+            )
+        )
 
 
 class DiscordOutput(Output):
