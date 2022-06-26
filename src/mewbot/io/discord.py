@@ -15,6 +15,7 @@ from mewbot.api.v1 import IOConfig, Input, Output, InputEvent, OutputEvent
 @dataclasses.dataclass
 class DiscordInputEvent(InputEvent):
     """
+    Class which represents a new message being detected on any of the channels that the bot is connected to.
     Ideally should contain enough messages/objects to actually respond to a message.
     """
 
@@ -23,7 +24,20 @@ class DiscordInputEvent(InputEvent):
 
 
 @dataclasses.dataclass
+class DiscordUserJoinInputEvent(InputEvent):
+    """
+    Class which represents a user joining one of the discord channels which the bot has access to.
+    """
+
+    member: discord.member.Member
+
+
+@dataclasses.dataclass
 class DiscordOutputEvent(OutputEvent):
+    """
+    Currently just used to reply to an input event.
+    """
+
     text: str
     message: discord.message
     use_message_channel: bool
@@ -73,7 +87,7 @@ class DiscordInput(Input, discord.Client):  # type: ignore
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
         """Defines the set of input events this Input class can produce."""
-        return {DiscordInputEvent}
+        return {DiscordInputEvent, DiscordUserJoinInputEvent}
 
     async def run(self) -> None:
         """
@@ -103,6 +117,18 @@ class DiscordInput(Input, discord.Client):  # type: ignore
             return
 
         await self.queue.put(DiscordInputEvent(text=message.content, message=message))
+
+    async def on_member_join(self, member: discord.Member) -> None:
+        """
+        Triggered when a member joins one of the guilds that the bot is monitoring.
+        """
+        self._logger.info("New member \"%s\" has been detected joining\"%s\"",
+                          str(member.mention), str(member.guild.name))
+
+        if not self.queue:
+            return
+
+        await self.queue.put(DiscordUserJoinInputEvent(member=member))
 
 
 class DiscordOutput(Output):
