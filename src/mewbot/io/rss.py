@@ -133,6 +133,9 @@ class RSSIO(IOConfig):
         """
         Presented as a property because updating it requires updating the runner as well.
         """
+        if not isinstance(sites, list):
+            raise AttributeError("Please provide a list of sites.")
+
         self._sites = sites
         if not self._input:
             return
@@ -176,6 +179,8 @@ class RSSInputState:
 
     @sites.setter
     def sites(self, new_sites: List[str]) -> None:
+        if not isinstance(new_sites, list):
+            raise AttributeError("Please provide a list of sites.")
         self._sites = new_sites
         self.start()
 
