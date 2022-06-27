@@ -14,6 +14,11 @@ from mewbot.api.v1 import IOConfig, Input, Output, InputEvent, OutputEvent
 
 @dataclasses.dataclass
 class DiscordInputEvent(InputEvent):
+    pass
+
+
+@dataclasses.dataclass
+class DiscordTextInputEvent(DiscordInputEvent):
     """
     Class which represents a new message being detected on any of the channels that the bot is
     connected to.
@@ -25,7 +30,7 @@ class DiscordInputEvent(InputEvent):
 
 
 @dataclasses.dataclass
-class DiscordUserJoinInputEvent(InputEvent):
+class DiscordUserJoinInputEvent(DiscordInputEvent):
     """
     Class which represents a user joining one of the discord channels which the bot has access to.
     """
@@ -34,7 +39,7 @@ class DiscordUserJoinInputEvent(InputEvent):
 
 
 @dataclasses.dataclass
-class DiscordMessageEditInputEvent(InputEvent):
+class DiscordMessageEditInputEvent(DiscordInputEvent):
     """
     Class which represents an edit to an existing message being detected on any of the channels
     that the bot is connected to.
@@ -102,7 +107,11 @@ class DiscordInput(Input, discord.Client):  # type: ignore
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
         """Defines the set of input events this Input class can produce."""
-        return {DiscordInputEvent, DiscordUserJoinInputEvent, DiscordMessageEditInputEvent}
+        return {
+            DiscordTextInputEvent,
+            DiscordUserJoinInputEvent,
+            DiscordMessageEditInputEvent,
+        }
 
     async def run(self) -> None:
         """
@@ -131,7 +140,7 @@ class DiscordInput(Input, discord.Client):  # type: ignore
         if not self.queue:
             return
 
-        await self.queue.put(DiscordInputEvent(text=message.content, message=message))
+        await self.queue.put(DiscordTextInputEvent(text=message.content, message=message))
 
     async def on_member_join(self, member: discord.Member) -> None:
         """

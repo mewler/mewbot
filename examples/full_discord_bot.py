@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # pylint: disable=duplicate-code
 # this is an example - duplication for emphasis is desirable
+# Aims to expose the full capabilities of this discord bot framework
 
 from __future__ import annotations
 
@@ -10,20 +11,24 @@ import logging
 
 from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
-from mewbot.io.discord import DiscordTextInputEvent
-from mewbot.io.desktop_notification import DesktopNotificationOutputEvent
+from mewbot.io.discord import (
+    DiscordInputEvent,
+    DiscordTextInputEvent,
+    DiscordMessageEditInputEvent,
+    DiscordOutputEvent,
+)
 
 
-class DiscordTextCommandTrigger(Trigger):
+class DiscordAllCommandTrigger(Trigger):
     """
-    Nothing fancy - just fires whenever there is a DiscordTextInputEvent
+    Nothing fancy - just fires whenever there is a DiscordTextInputEvent - of any type.
     """
 
     _command: str = ""
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordTextInputEvent}
+        return {DiscordTextInputEvent, DiscordMessageEditInputEvent}
 
     @property
     def command(self) -> str:
@@ -34,13 +39,21 @@ class DiscordTextCommandTrigger(Trigger):
         self._command = str(command)
 
     def matches(self, event: InputEvent) -> bool:
-        if not isinstance(event, DiscordTextInputEvent):
+        print(type(event))
+        if not isinstance(event, DiscordInputEvent):
             return False
 
-        return event.text == self._command
+        # Trigger on the preset command - and all edits
+        if isinstance(event, DiscordTextInputEvent):
+            return event.text == self._command
+
+        if isinstance(event, DiscordMessageEditInputEvent):
+            return True
+
+        return False
 
 
-class DiscordMessageToNotificationAction(Action):
+class DiscordCommandTextAndEditResponse(Action):
     """
     Print every InputEvent.
     """
@@ -55,11 +68,11 @@ class DiscordMessageToNotificationAction(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordTextInputEvent}
+        return {DiscordTextInputEvent, DiscordMessageEditInputEvent}
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:
-        return {DesktopNotificationOutputEvent}
+        return {DiscordOutputEvent}
 
     @property
     def message(self) -> str:
@@ -73,14 +86,19 @@ class DiscordMessageToNotificationAction(Action):
         """
         Construct a DiscordOutputEvent with the result of performing the calculation.
         """
-        if not isinstance(event, DiscordTextInputEvent):
+        if isinstance(event, DiscordMessageEditInputEvent):
+            self._logger.info("We have detected editing! - %s", event)
+            test_event = DiscordOutputEvent(
+                text="Editor!", message=event.message_after, use_message_channel=True
+            )
+
+        elif isinstance(event, DiscordTextInputEvent):
+            test_event = DiscordOutputEvent(
+                text=self._message, message=event.message, use_message_channel=True
+            )
+
+        else:
             self._logger.warning("Received wrong event type %s", type(event))
             return
-
-        test_event = DesktopNotificationOutputEvent(
-            title="Someone said hello!",
-            text=self._message,
-        )
-        self._logger.info("Triggering DesktopNotification %s", test_event)
 
         await self.send(test_event)
