@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Set, Sequence, Type
+from typing import Optional, Set, Sequence, Type, List
 
 import dataclasses
 import logging
@@ -67,6 +67,7 @@ class DiscordIO(IOConfig):
     _input: Optional[DiscordInput] = None
     _output: Optional[DiscordOutput] = None
     _token: str = ""
+    _startup_queue_depth: int = 0
 
     @property
     def token(self) -> str:
@@ -76,9 +77,20 @@ class DiscordIO(IOConfig):
     def token(self, token: str) -> None:
         self._token = token
 
+    @property
+    def startup_queue_depth(self) -> int:
+        return self._startup_queue_depth
+
+    @startup_queue_depth.setter
+    def startup_queue_depth(self, startup_queue_depth: int) -> None:
+        assert (
+            startup_queue_depth >= 0
+        ), "Please provide a positive (or 0) startup_queue_depth"
+        self._startup_queue_depth = startup_queue_depth
+
     def get_inputs(self) -> Sequence[Input]:
         if not self._input:
-            self._input = DiscordInput(self._token)
+            self._input = DiscordInput(self._token, self._startup_queue_depth)
 
         return [self._input]
 
@@ -96,13 +108,24 @@ class DiscordInput(Input, discord.Client):  # type: ignore
 
     _logger: logging.Logger
     _token: str
+    _startup_queue_depth: int
 
-    def __init__(self, token: str) -> None:
+    def __init__(self, token: str, startup_queue_depth: int = 0) -> None:
+        """
+        :param token: The token need to authenticate this bot to the discord server
+        :param startup_queue_depth:
+            During startup, the number of DiscordTextInputEvents to put on the wire
+            (Other forms of event are not always possible).
+        """
+        assert startup_queue_depth >= 0, "Does not support a negative startup_queue_depth"
+
         super(Input, self).__init__()  # pylint: disable=bad-super-call
         super(discord.Client, self).__init__()  # pylint: disable=bad-super-call
 
         self._token = token
         self._logger = logging.getLogger(__name__ + "DiscordInput")
+
+        self._startup_queue_depth = startup_queue_depth
 
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
@@ -128,6 +151,52 @@ class DiscordInput(Input, discord.Client):  # type: ignore
         :return:
         """
         self._logger.info("%s has connected to Discord!", self.user)
+
+        await self.retrieve_old_message()
+
+    async def retrieve_old_message(self) -> None:
+        """
+        If a startup_queue_depth is set, then
+        """
+        if not self._startup_queue_depth:
+            return
+
+        # Might want to, instead, wait for a queue
+        if not self.queue:
+            return
+
+        self._logger.info("Retrieving %s old messages", self._startup_queue_depth)
+
+        # The aim is to build a list of the last five messages the bot would have seen if it was up
+        # - iterate over all the guilds the bot can see
+        # - then iterate over all the text channels in that guild
+        # - grab a number of messages equal to the queue depth
+        # - append them to a master list
+        # - sort on time in the master list
+        # - return the queue depth number of items from the sorted list
+        past_messages: List[discord.Message] = []
+
+        # Short cut for itterating over all guilds, then all channels
+        for channel in self.get_all_channels():
+            # Ignoring everything which is not a text channel - nothing to do with past voice
+            if not isinstance(channel, discord.channel.TextChannel):
+                continue
+
+            messages = await channel.history(limit=5).flatten()
+            past_messages.extend(messages)
+
+        # Sort the messages and put the last five on the wire
+        past_messages = sorted(
+            past_messages, key=lambda x: float(x.created_at.timestamp()), reverse=True
+        )
+
+        for _ in range(self._startup_queue_depth):
+            message = past_messages[_]
+
+            if not isinstance(message, discord.Message):
+                self._logger.info("Expected a message and got a %s", type(message))
+
+            await self.queue.put(DiscordTextInputEvent(text=message.content, message=message))
 
     async def on_message(self, message: discord.Message) -> None:
         """

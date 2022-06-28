@@ -39,21 +39,14 @@ class DiscordAllCommandTrigger(Trigger):
         self._command = str(command)
 
     def matches(self, event: InputEvent) -> bool:
-        print(type(event))
+
         if not isinstance(event, DiscordInputEvent):
             return False
 
-        # Trigger on the preset command - and all edits
-        if isinstance(event, DiscordTextInputEvent):
-            return event.text == self._command
-
-        if isinstance(event, DiscordMessageEditInputEvent):
-            return True
-
-        return False
+        return True
 
 
-class DiscordCommandTextAndEditResponse(Action):
+class DiscordPrintAction(Action):
     """
     Print every InputEvent.
     """
@@ -86,19 +79,4 @@ class DiscordCommandTextAndEditResponse(Action):
         """
         Construct a DiscordOutputEvent with the result of performing the calculation.
         """
-        if isinstance(event, DiscordMessageEditInputEvent):
-            self._logger.info("We have detected editing! - %s", event)
-            test_event = DiscordOutputEvent(
-                text="Editor!", message=event.message_after, use_message_channel=True
-            )
-
-        elif isinstance(event, DiscordTextInputEvent):
-            test_event = DiscordOutputEvent(
-                text=self._message, message=event.message, use_message_channel=True
-            )
-
-        else:
-            self._logger.warning("Received wrong event type %s", type(event))
-            return
-
-        await self.send(test_event)
+        print(event)
