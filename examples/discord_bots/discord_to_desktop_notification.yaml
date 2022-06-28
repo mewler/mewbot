@@ -20,14 +20,14 @@ properties:
   name: 'Echo Inputs'
 triggers:
   - kind: Trigger
-    implementation: examples.discord_to_desktop_notification.DiscordTextCommandTrigger
+    implementation: examples.discord_bots.discord_to_desktop_notification.DiscordTextCommandTrigger
     uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa03
     properties:
       command: "!hello"
 conditions: []
 actions:
   - kind: Action
-    implementation: examples.discord_to_desktop_notification.DiscordMessageToNotificationAction
+    implementation: examples.discord_bots.discord_to_desktop_notification.DiscordMessageToNotificationAction
     uuid: aaaaaaaa-aaaa-4aaa-0000-aaaaaaaaaa04
     properties:
       message: "world"

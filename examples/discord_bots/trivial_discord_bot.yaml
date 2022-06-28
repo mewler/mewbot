@@ -3,7 +3,6 @@ implementation: mewbot.io.discord.DiscordIO
 uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa00
 properties:
   token: "[token goes here]"
-  startup_queue_depth: 5
 
 ---
 
@@ -14,14 +13,14 @@ properties:
   name: 'Echo Inputs'
 triggers:
   - kind: Trigger
-    implementation: examples.history_discord_bot.DiscordAllCommandTrigger
+    implementation: examples.discord_bots.trivial_discord_bot.DiscordTextCommandTrigger
     uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa02
     properties:
       command: "!hello"
 conditions: []
 actions:
   - kind: Action
-    implementation: examples.history_discord_bot.DiscordPrintAction
+    implementation: examples.discord_bots.trivial_discord_bot.DiscordCommandTextResponse
     uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa03
     properties:
       message: "world"
