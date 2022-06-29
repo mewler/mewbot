@@ -18,36 +18,43 @@ from mewbot.core import (
 
 class TestComponent:
     # Test a set of what interface passing succeeds and fails
-    def test_componentkind_interface_map_behaviour(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_behaviour() -> None:
         assert (
             ComponentKind.interface(ComponentKind(ComponentKind.Behaviour))
             == BehaviourInterface
         )
 
-    def test_componentkind_interface_map_trigger(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_trigger() -> None:
         assert (
             ComponentKind.interface(ComponentKind(ComponentKind.Trigger)) == TriggerInterface
         )
 
-    def test_componentkind_interface_map_condition(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_condition() -> None:
         assert (
             ComponentKind.interface(ComponentKind(ComponentKind.Condition))
             == ConditionInterface
         )
 
-    def test_componentkind_interface_map_action(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_action() -> None:
         assert ComponentKind.interface(ComponentKind(ComponentKind.Action)) == ActionInterface
 
-    def test_componentkind_interface_map_ioconfig(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_ioconfig() -> None:
         assert (
             ComponentKind.interface(ComponentKind(ComponentKind.IOConfig))
             == IOConfigInterface
         )
 
-    def test_componentkind_interface_map_datasource(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_datasource() -> None:
         with pytest.raises(ValueError):  # @UndefinedVariable
             _ = ComponentKind.interface(ComponentKind(ComponentKind.DataSource))
 
-    def test_componentkind_interface_map_template(self) -> None:
+    @staticmethod
+    def test_componentkind_interface_map_template() -> None:
         with pytest.raises(ValueError):  # @UndefinedVariable
             _ = ComponentKind.interface(ComponentKind(ComponentKind.Template))
