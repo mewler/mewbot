@@ -20,13 +20,15 @@ CONFIG_YAML = "examples/trivial_http_post.yaml"
 
 
 class TestLoader:
-    def test_empty_config(self) -> None:
+    @staticmethod
+    def test_empty_config() -> None:
         # Build a bad config and give it to the bot
         this_config = ConfigBlock()  # type: ignore
         with pytest.raises(ValueError):  # @UndefinedVariable
             _ = load_component(this_config)
 
-    def test_bad_config(self) -> None:
+    @staticmethod
+    def test_bad_config() -> None:
         # Build a bad config and give it to the bot
         this_config = ConfigBlock()  # type: ignore
         this_config["kind"] = "NULL"
@@ -37,7 +39,8 @@ class TestLoader:
 class TestLoaderConfigureBot:
 
     # Test this working
-    def test_config_type(self) -> None:
+    @staticmethod
+    def test_config_type() -> None:
         with open(CONFIG_YAML, "r", encoding="utf-8") as config_file:
             config = list(yaml.load_all(config_file, Loader=yaml.CSafeLoader))
 
@@ -47,7 +50,8 @@ class TestLoaderConfigureBot:
         )
 
     # Test this working
-    def test_working(self) -> None:
+    @staticmethod
+    def test_working() -> None:
         with open(CONFIG_YAML, "r", encoding="utf-8") as config_file:
             bot = configure_bot("bot", config_file)
 
