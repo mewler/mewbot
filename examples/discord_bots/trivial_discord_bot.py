@@ -11,7 +11,7 @@ import logging
 
 from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
-from mewbot.io.discord import DiscordTextInputEvent, DiscordOutputEvent
+from mewbot.io.discord import DiscordMessageCreationEvent, DiscordOutputEvent
 
 
 class DiscordTextCommandTrigger(Trigger):
@@ -23,7 +23,7 @@ class DiscordTextCommandTrigger(Trigger):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordTextInputEvent}
+        return {DiscordMessageCreationEvent}
 
     @property
     def command(self) -> str:
@@ -34,7 +34,7 @@ class DiscordTextCommandTrigger(Trigger):
         self._command = str(command)
 
     def matches(self, event: InputEvent) -> bool:
-        if not isinstance(event, DiscordTextInputEvent):
+        if not isinstance(event, DiscordMessageCreationEvent):
             return False
 
         return event.text == self._command
@@ -55,7 +55,7 @@ class DiscordCommandTextResponse(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordTextInputEvent}
+        return {DiscordMessageCreationEvent}
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:
@@ -73,7 +73,7 @@ class DiscordCommandTextResponse(Action):
         """
         Construct a DiscordOutputEvent with the result of performing the calculation.
         """
-        if not isinstance(event, DiscordTextInputEvent):
+        if not isinstance(event, DiscordMessageCreationEvent):
             self._logger.warning("Received wrong event type %s", type(event))
             return
 

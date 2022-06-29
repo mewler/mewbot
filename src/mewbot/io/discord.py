@@ -18,7 +18,16 @@ class DiscordInputEvent(InputEvent):
 
 
 @dataclasses.dataclass
-class DiscordTextInputEvent(DiscordInputEvent):
+class DiscordUserJoinInputEvent(DiscordInputEvent):
+    """
+    Class which represents a user joining one of the discord channels which the bot has access to.
+    """
+
+    member: discord.member.Member
+
+
+@dataclasses.dataclass
+class DiscordMessageCreationEvent(DiscordInputEvent):
     """
     Class which represents a new message being detected on any of the channels that the bot is
     connected to.
@@ -27,15 +36,6 @@ class DiscordTextInputEvent(DiscordInputEvent):
 
     text: str
     message: discord.Message
-
-
-@dataclasses.dataclass
-class DiscordUserJoinInputEvent(DiscordInputEvent):
-    """
-    Class which represents a user joining one of the discord channels which the bot has access to.
-    """
-
-    member: discord.member.Member
 
 
 @dataclasses.dataclass
@@ -50,6 +50,13 @@ class DiscordMessageEditInputEvent(DiscordInputEvent):
 
     text_after: str
     message_after: discord.Message
+
+
+@dataclasses.dataclass
+class DiscordMessageDeleteInputEvent(DiscordInputEvent):
+
+    text_before: str
+    message: discord.Message
 
 
 @dataclasses.dataclass
@@ -131,9 +138,10 @@ class DiscordInput(Input, discord.Client):  # type: ignore
     def produces_inputs() -> Set[Type[InputEvent]]:
         """Defines the set of input events this Input class can produce."""
         return {
-            DiscordTextInputEvent,
             DiscordUserJoinInputEvent,
+            DiscordMessageCreationEvent,
             DiscordMessageEditInputEvent,
+            DiscordMessageDeleteInputEvent,
         }
 
     async def run(self) -> None:
@@ -196,7 +204,9 @@ class DiscordInput(Input, discord.Client):  # type: ignore
             if not isinstance(message, discord.Message):
                 self._logger.info("Expected a message and got a %s", type(message))
 
-            await self.queue.put(DiscordTextInputEvent(text=message.content, message=message))
+            await self.queue.put(
+                DiscordMessageCreationEvent(text=message.content, message=message)
+            )
 
     async def on_message(self, message: discord.Message) -> None:
         """
@@ -209,7 +219,9 @@ class DiscordInput(Input, discord.Client):  # type: ignore
         if not self.queue:
             return
 
-        await self.queue.put(DiscordTextInputEvent(text=message.content, message=message))
+        await self.queue.put(
+            DiscordMessageCreationEvent(text=message.content, message=message)
+        )
 
     async def on_member_join(self, member: discord.Member) -> None:
         """
@@ -229,6 +241,8 @@ class DiscordInput(Input, discord.Client):  # type: ignore
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
         """
         Triggered when a message is edited on any of the channels which the bot is monitoring.
+        :param before: The message before the edit
+        :param after: The message after the edit
         """
         self._logger.info("Message edit - %s changed to %s", before.content, after.content)
 
@@ -242,6 +256,24 @@ class DiscordInput(Input, discord.Client):  # type: ignore
                 text_after=after.content,
                 message_after=after,
             )
+        )
+
+    async def on_message_delete(self, message: discord.Message) -> None:
+        """
+        Triggered when a message is deleted on any of the channels which the bot is monitoring.
+        :param message: The message before the delete event occurred.
+        """
+        self._logger.info(
+            "Message delete - %s has deleted a message with content %s",
+            message.author,
+            message.content,
+        )
+
+        if not self.queue:
+            return
+
+        await self.queue.put(
+            DiscordMessageDeleteInputEvent(text_before=message.content, message=message)
         )
 
 
