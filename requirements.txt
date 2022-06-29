@@ -9,3 +9,5 @@ aiohttp~=3.7.4  # Waiting for py-cord to upgrade
 setuptools~=62.6
 
 win10toast~=0.9; sys_platform == "win32"
+
+feedparser~=6.0.8
