@@ -13,7 +13,7 @@ from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
 from mewbot.io.discord import (
     DiscordInputEvent,
-    DiscordTextInputEvent,
+    DiscordMessageCreationEvent,
     DiscordMessageEditInputEvent,
     DiscordOutputEvent,
 )
@@ -28,7 +28,7 @@ class DiscordAllCommandTrigger(Trigger):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordTextInputEvent, DiscordMessageEditInputEvent}
+        return {DiscordMessageCreationEvent, DiscordMessageEditInputEvent}
 
     @property
     def command(self) -> str:
@@ -44,7 +44,7 @@ class DiscordAllCommandTrigger(Trigger):
             return False
 
         # Trigger on the preset command - and all edits
-        if isinstance(event, DiscordTextInputEvent):
+        if isinstance(event, DiscordMessageCreationEvent):
             return event.text == self._command
 
         if isinstance(event, DiscordMessageEditInputEvent):
@@ -68,7 +68,7 @@ class DiscordCommandTextAndEditResponse(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordTextInputEvent, DiscordMessageEditInputEvent}
+        return {DiscordMessageCreationEvent, DiscordMessageEditInputEvent}
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:
@@ -92,7 +92,7 @@ class DiscordCommandTextAndEditResponse(Action):
                 text="Editor!", message=event.message_after, use_message_channel=True
             )
 
-        elif isinstance(event, DiscordTextInputEvent):
+        elif isinstance(event, DiscordMessageCreationEvent):
             test_event = DiscordOutputEvent(
                 text=self._message, message=event.message, use_message_channel=True
             )

@@ -15,7 +15,7 @@ from mewbot.api.v1 import IOConfig
 
 
 class TestIoHttpsPost(BaseTestClassWithConfig[DiscordIO]):
-    config_file: str = "examples/trivial_discord_bot.yaml"
+    config_file: str = "examples/discord_bots/trivial_discord_bot.yaml"
     implementation: Type[DiscordIO] = DiscordIO
 
     def test_check_class(self) -> None:
