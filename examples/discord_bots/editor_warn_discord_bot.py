@@ -12,40 +12,23 @@ import logging
 from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
 from mewbot.io.discord import (
-    DiscordInputEvent,
-    DiscordMessageCreationEvent,
     DiscordMessageEditInputEvent,
     DiscordOutputEvent,
 )
 
 
-class DiscordAllCommandTrigger(Trigger):
+class DiscordEditTrigger(Trigger):
     """
-    Nothing fancy - just fires whenever there is a DiscordTextInputEvent - of any type.
+    Nothing fancy - just fires whenever there is a DiscordEditInputEvent.
     """
-
-    _command: str = ""
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordMessageCreationEvent, DiscordMessageEditInputEvent}
-
-    @property
-    def command(self) -> str:
-        return self._command
-
-    @command.setter
-    def command(self, command: str) -> None:
-        self._command = str(command)
+        return {
+            DiscordMessageEditInputEvent,
+        }
 
     def matches(self, event: InputEvent) -> bool:
-
-        if not isinstance(event, DiscordInputEvent):
-            return False
-
-        # Trigger on the preset command - and all edits
-        if isinstance(event, DiscordMessageCreationEvent):
-            return event.text == self._command
 
         if isinstance(event, DiscordMessageEditInputEvent):
             return True
@@ -53,9 +36,9 @@ class DiscordAllCommandTrigger(Trigger):
         return False
 
 
-class DiscordCommandTextAndEditResponse(Action):
+class DiscordEditResponse(Action):
     """
-    Print every InputEvent.
+    Responds to every edit event in the channel where it occured.
     """
 
     _logger: logging.Logger
@@ -68,7 +51,9 @@ class DiscordCommandTextAndEditResponse(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordMessageCreationEvent, DiscordMessageEditInputEvent}
+        return {
+            DiscordMessageEditInputEvent,
+        }
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:
@@ -89,16 +74,11 @@ class DiscordCommandTextAndEditResponse(Action):
         if isinstance(event, DiscordMessageEditInputEvent):
             self._logger.info("We have detected editing! - %s", event)
             test_event = DiscordOutputEvent(
-                text="Editor!", message=event.message_after, use_message_channel=True
+                text=f'We have detected editing! "{event.message_before.content}"'
+                f' was changed to "f{event.message_after.content}"',
+                message=event.message_after,
+                use_message_channel=True,
             )
+            await self.send(test_event)
 
-        elif isinstance(event, DiscordMessageCreationEvent):
-            test_event = DiscordOutputEvent(
-                text=self._message, message=event.message, use_message_channel=True
-            )
-
-        else:
-            self._logger.warning("Received wrong event type %s", type(event))
-            return
-
-        await self.send(test_event)
+        self._logger.warning("Received wrong event type %s", type(event))

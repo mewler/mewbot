@@ -12,40 +12,23 @@ import logging
 from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
 from mewbot.io.discord import (
-    DiscordInputEvent,
-    DiscordMessageCreationEvent,
     DiscordMessageDeleteInputEvent,
     DiscordOutputEvent,
 )
 
 
-class DiscordAllCommandTrigger(Trigger):
+class DiscordDeleteEventTrigger(Trigger):
     """
-    Nothing fancy - just fires whenever there is a DiscordTextInputEvent - of any type.
+    Nothing fancy - just fires whenever there is a DiscordDeleteEvent.
     """
-
-    _command: str = ""
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordMessageCreationEvent, DiscordMessageDeleteInputEvent}
-
-    @property
-    def command(self) -> str:
-        return self._command
-
-    @command.setter
-    def command(self, command: str) -> None:
-        self._command = str(command)
+        return {
+            DiscordMessageDeleteInputEvent,
+        }
 
     def matches(self, event: InputEvent) -> bool:
-
-        if not isinstance(event, DiscordInputEvent):
-            return False
-
-        # Trigger on the preset command - and all edits
-        if isinstance(event, DiscordMessageCreationEvent):
-            return event.text == self._command
 
         if isinstance(event, DiscordMessageDeleteInputEvent):
             return True
@@ -53,9 +36,9 @@ class DiscordAllCommandTrigger(Trigger):
         return False
 
 
-class DiscordCommandTextAndDeleteResponse(Action):
+class DiscordDeleteResponseAction(Action):
     """
-    Print every InputEvent.
+    Respond to every deletion event in the channel where the message was located.
     """
 
     _logger: logging.Logger
@@ -68,7 +51,9 @@ class DiscordCommandTextAndDeleteResponse(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {DiscordMessageCreationEvent, DiscordMessageDeleteInputEvent}
+        return {
+            DiscordMessageDeleteInputEvent,
+        }
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:
@@ -93,14 +78,6 @@ class DiscordCommandTextAndDeleteResponse(Action):
                 message=event.message,
                 use_message_channel=True,
             )
+            await self.send(test_event)
 
-        elif isinstance(event, DiscordMessageCreationEvent):
-            test_event = DiscordOutputEvent(
-                text=self._message, message=event.message, use_message_channel=True
-            )
-
-        else:
-            self._logger.warning("Received wrong event type %s", type(event))
-            return
-
-        await self.send(test_event)
+        self._logger.warning("Received wrong event type %s", type(event))

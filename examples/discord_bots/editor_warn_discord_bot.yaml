@@ -13,14 +13,12 @@ properties:
   name: 'Echo Inputs'
 triggers:
   - kind: Trigger
-    implementation: examples.discord_bots.editor_warn_discord_bot.DiscordAllCommandTrigger
+    implementation: examples.discord_bots.editor_warn_discord_bot.DiscordEditTrigger
     uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa02
-    properties:
-      command: "!hello"
+    properties: {}
 conditions: []
 actions:
   - kind: Action
-    implementation: examples.discord_bots.editor_warn_discord_bot.DiscordCommandTextAndEditResponse
+    implementation: examples.discord_bots.editor_warn_discord_bot.DiscordEditResponse
     uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa03
-    properties:
-      message: "world"
+    properties: {}
