@@ -266,7 +266,24 @@ C:\mewbot_dev\mewbot
 ```
 
 There are a number of ways to do this.
-Probably the most elegant is to modify the venv activate script, which you previously created an alias to.
+
+#### Use a .pth files
+
+Probably the best way is to use a `.pth` file - these provide instructions to the python interpreter as to additional folders to include in its path.
+
+A path file is just a text file with extension `.pth` which include folders you want added to the python path - one per line.
+
+It must be placed on the path of the python interpreter your currently using. In this case, assuming you have the same paths as me, probably the best place to put it would be
+
+```shell
+C:\mewbot_dev\mewbot_venv\Lib\site-packages
+```
+
+Simple add a file named `mewbot.pth` here with the single line `C:\mewbot_dev\mewbot`. It's probably best to add it as a new file, instead of modifying one of the existing ones - as these are under system control and may be overwritten without warning.
+
+#### Modify the venv activation script
+
+This is probably the harder option, but is included for completeness.
 
 In my case, the script could be found at
 
@@ -346,6 +363,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> import tools
 >>>
 ```
+
+The primary disadvantage of this method is that it will be undone if the activation script is ever recreated.
 
 13) Tests that the linting script is functioning correctly
 
