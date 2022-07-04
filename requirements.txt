@@ -6,6 +6,6 @@ PyYAML~=6.0
 py-cord~=1.7
 
 aiohttp~=3.7.4  # Waiting for py-cord to upgrade
-setuptools~=62.6
+setuptools~=63.1
 
 win10toast~=0.9; sys_platform == "win32"
