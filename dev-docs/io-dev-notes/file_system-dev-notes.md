@@ -117,6 +117,40 @@ So rolling with aiopath for the moment - may revisit later.
 Current we get back a tuple containing the type of change and the path to the changed resource. But not the modification time ... 
 Cam retrieve that later ... or just not bother.
 
+### Bug 1 - watchfiles throws a FileNotFound error when the file does not, in fact, exist
+
+This is ... less than idea. It would be better if the watcher just waited until the file appeared.
+
+There seems to be no easy way to change this behavior other than digging into the compiled Rust directly.
+
+Additionally - monitoring a folder seems to work well - assuming the folder exists at startup. If the folder does not - and is created later - it breaks. If the folder initially exists, and then is deleted, and then is recreated, it seems to _silently_ break.
+
+It's probably monitoring the linode id - or equivalent - so new dir, new id.
+In keeping with this guess - deleting and recreating a file triggers the same problem.
+
+So - probably going to need two operational modes - one where the system polls the file every (interval) using some kind of async path check - and one where watchfiles just watches it.
+
+Mode determined by switching on startup and on delete events which correspond to the file path being monitored.
+
+It was around this point that I realised that more comprehensive testing would be required. 
+
+### More comprehensive testing required
+
+Ideally, it would be best to just run an entire bot, with some custom methods for testing thrown in. But the input component is now gnarly enough I want to test it individually.
+
+Using 
+
+
+
+
+
+
+
+
+
+
+
+
 
 NOTE FOR THE FAR FUTURE
 
@@ -129,6 +163,11 @@ Unexpected behavior may result.
 
 I have the feeling that some IO methods - such as this one - might be a pain in the arse.
 
+Using [pytest-asyncio][5] seemed the best supported testing extension for async code. Adding this to requirements-dev.txt.
+
+[alt-pytest-asyncio][6] was considered, but the fact it only used one loop for all the tests made it seem worse than [pytest-asyncio][5] - which also seemed more full featured.
+
+
 
 
 
@@ -136,3 +175,5 @@ I have the feeling that some IO methods - such as this one - might be a pain in 
 [2]: https://discuss.python.org/t/enum-for-open-modes/2445/4 "File mode enum discussion"
 [3]: https://github.com/Tinche/aiofiles "aiofiles"
 [4]: https://github.com/alexdelorenzo/aiopath "aiopath"
+[5]: https://pypi.org/project/pytest-asyncio/ "pytest-asyncio"
+[6]: https://pypi.org/project/alt-pytest-asyncio/ "alt-pytest-asyncio"

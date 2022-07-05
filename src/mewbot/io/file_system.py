@@ -205,17 +205,12 @@ class FileSystemInput(Input):
         super(Input, self).__init__()  # pylint: disable=bad-super-call
 
         self._input_path = input_path
+
         self._logger = logging.getLogger(__name__ + "FileSystemInput")
 
         self.watcher = (
             watchfiles.awatch(self._input_path) if self._input_path is not None else None
         )
-
-        # self._watch = asyncio.Lock()
-        # # If _input_path is None, lock so that we won't run
-        # # If not, leave the lock so it can be acquired
-        # if self._input_path is None:
-        #     self._watch.acquire()
 
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
@@ -257,6 +252,8 @@ class FileSystemInput(Input):
         """
         Actually do the job of monitoring and responding to the watcher.
         """
+        # Ideally this would be done with some kind of run-don't run lock
+        # Waiting on better testing before attempting that.
         if self.watcher is None:
             await asyncio.sleep(0.5)  # Give the rest of the loop a chance to act
             return
