@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os.path
 from typing import Optional, Set, Sequence, Type
 
 import asyncio
 import dataclasses
+import datetime
 import logging
 
 import aiopath  # type: ignore
@@ -206,11 +208,23 @@ class FileSystemInput(Input):
 
         self._input_path = input_path
 
-        self._logger = logging.getLogger(__name__ + "FileSystemInput")
+        self._logger = logging.getLogger(__name__ + ":FileSystemInput")
 
-        self.watcher = (
-            watchfiles.awatch(self._input_path) if self._input_path is not None else None
-        )
+        if input_path is None or not os.path.exists(input_path):
+            self.watcher = None
+            self._input_path_exists = False
+
+        # Cannot await in this context - this is being done before loop start
+        elif not os.path.exists(input_path):
+            self.watcher = None
+            self._input_path_exists = False
+
+        # The only case where the watcher can actually start
+        elif self._input_path is not None:  # needed to fool pylint
+            self.watcher = watchfiles.awatch(self._input_path)
+            self._input_path_exists = True
+        else:
+            raise NotImplementedError
 
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
@@ -238,15 +252,96 @@ class FileSystemInput(Input):
         Token needs to be set by this point.
         """
         # Restart if the input path changes ... might be a good idea
-        if self._input_path:
+        if self._input_path_exists:
             self._logger.info('Starting FileSystemInput - monitoring "%s"', self._input_path)
         else:
-            self._logger.info("Cannot start FileSystemInput - provided input path is None")
-            return
+            self._logger.info(
+                'Waiting to start FileSystemInput - provided input path cannot be resolve "%s"',
+                self._input_path,
+            )
 
         while True:
 
+            await self._monitor_input_path()
             await self._monitor_watcher()
+
+    async def _monitor_input_path(self) -> None:
+        """
+        Preforms a check on the file - updating if needed.
+        """
+        if self._input_path_exists:
+            return
+
+        self._logger.info(
+            "The provided input path will be monitored till something appears - %s",
+            self._input_path,
+        )
+
+        while True:
+
+            if self._input_path is None:
+                await asyncio.sleep(0.5)  # Give the rest of the loop a chance to do something
+                continue
+
+            target_async_path: aiopath.AsyncPath = aiopath.AsyncPath(self._input_path)
+            target_status: bool = await target_async_path.exists()
+            if not target_status:
+
+                print(
+                    f"{target_status} - {self._input_path} - {self._input_path_exists} bad - "
+                    f"sleeping {datetime.datetime.now().timestamp()}"
+                )
+                await asyncio.sleep(0.5)  # Give the rest of the loop a chance to do something
+                continue
+
+            # Something has come into existence since the last loop
+
+            self._logger.info(
+                "Something has appeared at the input_path - %s", self._input_path
+            )
+
+            asyncio.get_running_loop().create_task(
+                self._input_path_created_task(target_async_path)
+            )
+
+            self.watcher = watchfiles.awatch(self._input_path)
+            self._input_path_exists = True
+            return
+
+    async def _input_path_created_task(self, target_async_path: aiopath.AsyncPath) -> None:
+        """
+        Called when _monitor_file detects that there's now something at the input_path location.
+        Spun off into a separate method because want to get into starting the watch as fast as
+        possible.
+        """
+        if self._input_path is None:
+            self._logger.warning(
+                "Unexpected call to _input_path_created_task - _input_path is None!"
+            )
+            return
+
+        str_path: str = self._input_path
+
+        if await target_async_path.is_dir():
+
+            self._logger.info('New asset at "%s" detected as dir', self._input_path)
+
+            await self.send(
+                CreatedDirFSInputEvent(dir_path=str_path, dir_async_path=target_async_path)
+            )
+
+        elif await target_async_path.is_file():
+
+            self._logger.info('New asset at "%s" detected as file', self._input_path)
+
+            await self.send(
+                CreatedFileFSInputEvent(file_path=str_path, file_async_path=target_async_path)
+            )
+
+        else:
+            self._logger.warning(
+                "Unexpected case in _input_path_created_task - %s", target_async_path
+            )
 
     async def _monitor_watcher(self) -> None:
         """
@@ -255,33 +350,12 @@ class FileSystemInput(Input):
         # Ideally this would be done with some kind of run-don't run lock
         # Waiting on better testing before attempting that.
         if self.watcher is None:
+            self._logger.info("Unexpected case - self.watcher is None in _monitor_watcher")
             await asyncio.sleep(0.5)  # Give the rest of the loop a chance to act
             return
 
         async for changes in self.watcher:
-
-            # Changes are sets of chance objects
-            # tuples with the first entry being the type of change
-            # the second element being the path to the changed item
-            for change in changes:
-
-                change_type, change_path = change
-
-                if change_type == watchfiles.Change.added:
-                    await self._do_add_event(change_path)
-
-                elif change_type == watchfiles.Change.modified:
-                    await self._do_update_event(change_path)
-
-                elif change_type == watchfiles.Change.deleted:
-                    await self._do_delete_event(change_path)
-
-                else:
-                    self._logger.warning(
-                        "Unexpected case when trying to parse file change - %s", change_type
-                    )
-
-                print(change[0], type(change[0]), change[1], type(change[1]))
+            await self._process_changes(changes)
 
     async def send(self, event: FSInputEvent) -> None:
 
@@ -289,6 +363,31 @@ class FileSystemInput(Input):
             return
 
         await self.queue.put(event)
+
+    async def _process_changes(self, changes: Set[tuple]):
+
+        # Changes are sets of chance objects
+        # tuples with the first entry being the type of change
+        # the second element being the path to the changed item
+        for change in changes:
+
+            change_type, change_path = change
+
+            if change_type == watchfiles.Change.added:
+                await self._do_add_event(change_path)
+
+            elif change_type == watchfiles.Change.modified:
+                await self._do_update_event(change_path)
+
+            elif change_type == watchfiles.Change.deleted:
+                await self._do_delete_event(change_path)
+
+            else:
+                self._logger.warning(
+                    "Unexpected case when trying to parse file change - %s", change_type
+                )
+
+            print(change[0], type(change[0]), change[1], type(change[1]))
 
     async def _do_add_event(self, change_path: str) -> None:
         """

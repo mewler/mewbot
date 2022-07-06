@@ -101,7 +101,7 @@ Probably, for simplicity, best for people to define multiple different IO Config
 
 ### Limitations of the library - or, perhaps, the file system
 
-Watchfiles tells us if a file or folder has been modified - but does not tell us if a file or folder has been changed.
+Watchfiles tells us if a file or files in a folder has been modified.
 
 Which probably means that we need to check what the resource is when it's modified ... could just collapse the file and the folder Inputs into a single class ... but that would make the input method a bit less helpful.
 
@@ -123,7 +123,7 @@ This is ... less than idea. It would be better if the watcher just waited until 
 
 There seems to be no easy way to change this behavior other than digging into the compiled Rust directly.
 
-Additionally - monitoring a folder seems to work well - assuming the folder exists at startup. If the folder does not - and is created later - it breaks. If the folder initially exists, and then is deleted, and then is recreated, it seems to _silently_ break.
+Additionally - monitoring files in a folder seems to work well - assuming the folder exists at startup. If the folder does not - and is created later - it breaks. If the folder initially exists, and then is deleted, and then is recreated, it seems to _silently_ break.
 
 It's probably monitoring the linode id - or equivalent - so new dir, new id.
 In keeping with this guess - deleting and recreating a file triggers the same problem.
@@ -136,9 +136,51 @@ It was around this point that I realised that more comprehensive testing would b
 
 ### More comprehensive testing required
 
-Ideally, it would be best to just run an entire bot, with some custom methods for testing thrown in. But the input component is now gnarly enough I want to test it individually.
+Ideally, it would be best to just run an entire bot, with some custom methods for testing thrown in.
+But the input component is now gnarly enough I want to test it individually.
 
-Using 
+Using [pytest-asyncio][5] and just enough infrastructure to isolate the input.
+The advantage of this is it demonstrates that the inputs can be pulled out and resumed fairly easily - which is good for re-usability.
+
+### More problems with the library
+
+So - there are a number of issues
+
+the watchfiles watcher explodes when it's fed a bad path to begin with.
+This has been corrected by the two operational modes mentioned above.
+But it also explodes - somewhat less helpfully - when you delete and recreate the file during a run.
+So going to have to build some infrastructure around this to deal with that and to elegantly resume after the errors.
+And to detect if the folder it's monitoring itself has been deleted...
+Might be worth considering breaking the input down into a "folder monitor" and a "file monitor" - but I still think this is the wrong approach.
+It makes handling such cases as "what if we started monitoring a file, then someone deleted it and replaced it with a folder" quite a lot harder.
+If it's watching a folder, and the folder gets deleted, it explodes halfway through notifying you about all the deletion events - this is clearly not on, and something needs to be done. 
+
+To be fair to it, watchfiles was, by the name, not really intended to deal with folders.
+
+### Alternatives
+
+[aiowatcher][7] - looks ... fairly sane
+[watchgod][8] - Note - the name put me off a bit, but I'm now pretty sure it's a play on the old project watchdog
+[pyinotify][9] - Years out of date and not sure that it would play nice with async (as the last time it was updated was python 3.6)
+[minotaur][10] - Looks fairly sane - but a young project which hasn't been updated for six months. However, it did recommend (with the caveat it doesn't have a non-async interface)
+[asyncinotify][11] which just looks really sensible
+[butter][12] does not seem to work under windows.
+
+So giving asyncinotify a crack!
+
+
+
+------- 
+
+COPIED FORM ASYNCINOTIFY FOR EMPHASIS - THIS PERSUADED ME TO SWITCH FROM USING STRINGS FOR THE PATHS TO pathlib.Path instances
+
+Warning
+This package handles the watch paths and event names and paths as pathlib.Path instances. These may not be valid utf-8, because Linux paths may contain any character except for the null byte, including invalid utf-8 sequences. This library encodes these using python’s surrogateescape handler, to conform to the way the os package does it. This means that if you have invalid utf-8 in a path, you can still handle it correctly and reference it as a file, but if you try to print it or convert it (such as using the str.encode() method), you will get an error unless you explicitly use surrogateescape.
+
+You can read more about the surrogateescape in the Python os package documentation and the codecs error handler documentation.
+
+-------
+
 
 
 
@@ -177,3 +219,9 @@ Using [pytest-asyncio][5] seemed the best supported testing extension for async 
 [4]: https://github.com/alexdelorenzo/aiopath "aiopath"
 [5]: https://pypi.org/project/pytest-asyncio/ "pytest-asyncio"
 [6]: https://pypi.org/project/alt-pytest-asyncio/ "alt-pytest-asyncio"
+[7]: https://pypi.org/project/aiowatcher/ "aiowatcher"
+[8]: https://pypi.org/project/watchgod/ "watchgod"
+[9]: https://github.com/seb-m/pyinotify "pyinotify"
+[10]: https://github.com/giannitedesco/minotaur "minotaur"
+[11]: https://asyncinotify.readthedocs.io/en/latest/ "asyncinotify"
+[12]: "https://pypi.org/project/butter/" "butter"

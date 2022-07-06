@@ -2,7 +2,7 @@ kind: IOConfig
 implementation: mewbot.io.file_system.FileSystemIO
 uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa00
 properties:
-  input_path: "C:\\mewbot_dev\\test_dir"
+  input_path: C:\mewbot_dev\new_dir
 ---
 
 kind: Behaviour
