@@ -159,16 +159,20 @@ To be fair to it, watchfiles was, by the name, not really intended to deal with 
 
 ### Alternatives
 
-[aiowatcher][7] - looks ... fairly sane
-[watchgod][8] - Note - the name put me off a bit, but I'm now pretty sure it's a play on the old project watchdog
+[aiowatcher][7] - looks ... fairly sane. Not for windows tho.
+[watchgod][8] - Has been renamed to watchfiles ... the package we're using. Note - the name put me off a bit, but I'm now pretty sure it's a play on the old project watchdog.
 [pyinotify][9] - Years out of date and not sure that it would play nice with async (as the last time it was updated was python 3.6)
-[minotaur][10] - Looks fairly sane - but a young project which hasn't been updated for six months. However, it did recommend (with the caveat it doesn't have a non-async interface)
+[minotaur][10] - Looks fairly sane - but a young project which hasn't been updated for six months. However, it did recommend (with the caveat it doesn't have a non-async interface).
+Almost certainly will not work on windows.
 [asyncinotify][11] which just looks really sensible
-[butter][12] does not seem to work under windows.
+[butter][12] does not work under windows.
+I would, in fact, be _greatly_ surprised if anything inotify based worked under windows. Due to windows, you know, not having inotify. But, apparently, there are some equivalent C based options on windows. So giving it a try.
 
 So giving asyncinotify a crack!
 
+Turns out, dll load changes in python 3.8 have completely broken it.
 
+So working up something with watchdog instead.
 
 ------- 
 
@@ -181,6 +185,28 @@ You can read more about the surrogateescape in the Python os package documentati
 
 -------
 
+There was a helpful gist for incorporating watchdog with async [here][13]. Using this as the basis for the method.
+
+#### After some more experimentation, the pain continues
+
+So - we now have two solutions that work pretty well - in different contexts.
+
+watchfiles - works really quite well on one file (or many - but we're not really using the library to its full effect)
+
+watchdog works really well on dirs.
+
+Neither of them works great when you delete the location that they're monitoring.
+Neither of them likes it if you remove the location they're monitoring and recreate it.
+
+So probably need to use both for different operational modes - possibly with some mods so that the system knows when monitoring fails and to resume.
+
+These operational modes - probably should be seperate input classes on balance.
+With the selection between them controlled by the type of resource the user declares it is - force them to be specific.
+This seems less likely to lead to unexpected behavior (for example, the edge case of starting with a file, then the user deletes it, then they create a dir in its place. You might then get a bunch of file events - for files created in the new folder - which you might not reason about correctly.)
+
+Note - there might not be a good way to tell what's going on - so it might be best to have SPECIFIC events for the monitoring target being created or deleted - so the user can watch for those explicitly, and not have to, e.g., check every dir deleted event in a dir monitoring scenario to see if it's the target directory which has been deleted).
+
+In fact - that seems a necessary and obvious thing to do... so more refactoring and more work on the examples.
 
 
 
@@ -225,3 +251,4 @@ Using [pytest-asyncio][5] seemed the best supported testing extension for async 
 [10]: https://github.com/giannitedesco/minotaur "minotaur"
 [11]: https://asyncinotify.readthedocs.io/en/latest/ "asyncinotify"
 [12]: "https://pypi.org/project/butter/" "butter"
+[13]: "https://gist.github.com/mivade/f4cb26c282d421a62e8b9a341c7c65f6" "helpful watchdog with async gist"

@@ -1,0 +1,1 @@
+Catch all place for individual developers to store notes they don't mind being public

@@ -15,6 +15,9 @@ from mewbot.io.file_system import (
     CreatedDirFSInputEvent,
     UpdatedDirFSInputEvent,
     DeletedDirFSInputEvent,
+    CreatedFileFSInputEvent,
+    UpdatedFileFSInputEvent,
+    DeletedFileFSInputEvent,
 )
 
 
@@ -25,12 +28,27 @@ class DirSystemAllCommandTrigger(Trigger):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {CreatedDirFSInputEvent, UpdatedDirFSInputEvent, DeletedDirFSInputEvent}
+        return {
+            CreatedDirFSInputEvent,
+            UpdatedDirFSInputEvent,
+            DeletedDirFSInputEvent,
+            CreatedFileFSInputEvent,
+            UpdatedFileFSInputEvent,
+            DeletedFileFSInputEvent,
+        }
 
     def matches(self, event: InputEvent) -> bool:
 
         if not isinstance(
-            event, (CreatedDirFSInputEvent, UpdatedDirFSInputEvent, DeletedDirFSInputEvent)
+            event,
+            (
+                CreatedDirFSInputEvent,
+                UpdatedDirFSInputEvent,
+                DeletedDirFSInputEvent,
+                CreatedFileFSInputEvent,
+                UpdatedFileFSInputEvent,
+                DeletedFileFSInputEvent,
+            ),
         ):
             return False
 
@@ -51,7 +69,14 @@ class DirSystemInputPrintResponse(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {CreatedDirFSInputEvent, UpdatedDirFSInputEvent, DeletedDirFSInputEvent}
+        return {
+            CreatedDirFSInputEvent,
+            UpdatedDirFSInputEvent,
+            DeletedDirFSInputEvent,
+            CreatedFileFSInputEvent,
+            UpdatedFileFSInputEvent,
+            DeletedFileFSInputEvent,
+        }
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:
@@ -65,4 +90,4 @@ class DirSystemInputPrintResponse(Action):
             self._logger.warning("Received wrong event type %s", type(event))
             return
 
-        print(event)
+        print("event seen by action - ", event)
