@@ -22,10 +22,14 @@ from mewbot.io.file_system.events import (
     UpdatedFileFSInputEvent,
     MovedFileFSInputEvent,
     DeletedFileFSInputEvent,
+    InputFileFileCreationInputEvent,
+    InputFileFileDeletionInputEvent,
     CreatedDirFSInputEvent,
     UpdatedDirFSInputEvent,
     MovedDirFSInputEvent,
     DeletedDirFSInputEvent,
+    InputFileDirCreationInputEvent,
+    InputFileDirDeletionInputEvent
 )
 
 
@@ -76,12 +80,13 @@ class FileTypeFSInput(Input):
     def produces_inputs() -> Set[Type[InputEvent]]:
         """
         Defines the set of input events this Input class can produce.
-        This type of InputClass monitors files - so it will never produce a dir event type.
+        This type of InputClass monitors a single file
+        So a number of the file type inputs make no sense for it.
         """
         return {
-            CreatedFileFSInputEvent,
-            UpdatedFileFSInputEvent,
-            DeletedFileFSInputEvent,
+            InputFileFileCreationInputEvent,  # A file is created at the monitored point
+            UpdatedFileFSInputEvent,  # The monitored file is updated
+            InputFileFileDeletionInputEvent,  # The monitored file is deleted
         }
 
     @property
@@ -161,18 +166,11 @@ class FileTypeFSInput(Input):
             is_target_dir: bool = await target_async_path.is_dir()
             if not target_exists:
 
-                print(
-                    f"{target_exists} - {self._input_path} - {self._input_path_exists} bad - "
-                    f"sleeping {datetime.datetime.now().timestamp()}"
-                )
                 await asyncio.sleep(0.5)  # Give the rest of the loop a chance to do something
                 continue
+
             if target_exists and is_target_dir:
-                print(
-                    f"{target_exists} - {self._input_path} - {self._input_path_exists} "
-                    f"exists but is a dir - "
-                    f"sleeping {datetime.datetime.now().timestamp()}"
-                )
+
                 await asyncio.sleep(0.5)  # Give the rest of the loop a chance to do something
                 continue
 
@@ -181,6 +179,9 @@ class FileTypeFSInput(Input):
                 "Something has appeared at the input_path - %s", self._input_path
             )
 
+            # All the logic which needs to be run when a file is created at the target location
+            # Aim is to get the event on the wire as fast as possible, so as to start the watcher
+            # To minimize the chance of missing events
             asyncio.get_running_loop().create_task(
                 self._input_path_file_created_task(target_async_path)
             )
@@ -202,6 +203,7 @@ class FileTypeFSInput(Input):
                 "Unexpected call to _input_path_file_created_task - _input_path is None!"
             )
             return
+
         if self._input_path is not None and self._input_path_type == "dir":
             self._logger.warning(
                 "Unexpected call to _input_path_file_created_task - "
@@ -219,7 +221,9 @@ class FileTypeFSInput(Input):
             self._logger.info('New asset at "%s" detected as file', self._input_path)
 
             await self.send(
-                CreatedFileFSInputEvent(file_path=str_path, file_async_path=target_async_path)
+                InputFileFileCreationInputEvent(
+                    file_path=str_path, file_async_path=target_async_path
+                )
             )
 
         else:
@@ -264,7 +268,11 @@ class FileTypeFSInput(Input):
             change_type, change_path = change
 
             if change_type == watchfiles.Change.added:
-                await self._do_add_event(change_path)
+                self._logger.warning(
+                    "With how we are using watchfiles this point should never be reached - %s - '%s'",
+                    change_type,
+                    change_path,
+                )
 
             elif change_type == watchfiles.Change.modified:
                 await self._do_update_event(change_path)
@@ -278,23 +286,11 @@ class FileTypeFSInput(Input):
                     "Unexpected case when trying to parse file change - %s", change_type
                 )
 
-            print(change[0], type(change[0]), change[1], type(change[1]))
-
         return False
-
-    async def _do_add_event(self, change_path: str) -> None:
-        """
-        Called when a file or folder is added to the bit of the FS being monitored.
-        """
-        target_async_path = aiopath.AsyncPath(change_path)
-
-        await self.send(
-            CreatedFileFSInputEvent(file_path=change_path, file_async_path=target_async_path)
-        )
 
     async def _do_update_event(self, change_path: str) -> None:
         """
-        Called when there is an update detected in the bit of the FS being monitored.
+        Called when the monitored file is updated.
         """
         target_async_path = aiopath.AsyncPath(change_path)
 
@@ -304,12 +300,14 @@ class FileTypeFSInput(Input):
 
     async def _do_delete_event(self, change_path: str) -> None:
         """
-        Called when there is an update detected in the bit of the FS being monitored.
+        Called when the monitored file is deleted.
         """
         target_async_path = aiopath.AsyncPath(change_path)
 
         await self.send(
-            DeletedFileFSInputEvent(file_path=change_path, file_async_path=target_async_path)
+            InputFileFileDeletionInputEvent(
+                file_path=change_path, file_async_path=target_async_path
+            )
         )
 
 
@@ -365,6 +363,8 @@ class DirTypeFSInput(Input):
         Defines the set of input events this Input class can produce.
         This is intended to be run on a dir - so will produce events for all the things
         in the dir as well.
+        Additionally, the dir being monitored itself can be deleted.
+        Hence the final two event types.
         """
         return {
             CreatedFileFSInputEvent,
@@ -373,6 +373,8 @@ class DirTypeFSInput(Input):
             CreatedDirFSInputEvent,
             UpdatedDirFSInputEvent,
             DeletedDirFSInputEvent,
+            InputFileDirCreationInputEvent,
+            InputFileDirDeletionInputEvent,
         }
 
     @property
@@ -445,20 +447,12 @@ class DirTypeFSInput(Input):
             is_target_file: bool = await target_async_path.is_file()
 
             if target_exists and is_target_file:
-                print(
-                    f"{target_exists} - {self._input_path} - {self._input_path_exists} "
-                    f"exists but is a file - "
-                    f"sleeping {datetime.datetime.now().timestamp()}"
-                )
+
                 await asyncio.sleep(0.5)  # Give the rest of the loop a chance to do something
                 continue
 
             if not target_exists:
 
-                print(
-                    f"{target_exists} - {self._input_path} - {self._input_path_exists} bad - "
-                    f"sleeping {datetime.datetime.now().timestamp()}"
-                )
                 await asyncio.sleep(0.5)  # Give the rest of the loop a chance to do something
                 continue
 
@@ -504,7 +498,9 @@ class DirTypeFSInput(Input):
             self._logger.info('New asset at "%s" detected as dir', self._input_path)
 
             await self.send(
-                CreatedDirFSInputEvent(dir_path=str_path, dir_async_path=target_async_path)
+                InputFileDirCreationInputEvent(
+                    dir_path=str_path, dir_async_path=target_async_path
+                )
             )
 
         else:
@@ -527,6 +523,12 @@ class DirTypeFSInput(Input):
         if dir_deleted:
             self._logger.info(
                 "%s has been deleted - returning to wait mode", self._input_path
+            )
+            await self.send(
+                InputFileDirDeletionInputEvent(
+                    dir_path=self._input_path,
+                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                )
             )
             self._input_path_exists = False
 
@@ -602,9 +604,6 @@ class DirTypeFSInput(Input):
         """
         Take an event and process it before putting it on the wire.
         """
-        print(event)
-        print(type(event))
-
         # Filter null events
         if event is None:
             return
@@ -639,7 +638,6 @@ class DirTypeFSInput(Input):
         """
         # FILES
         if isinstance(event, watchdog.events.FileCreatedEvent):
-            print("Is this going on the wire?")
             await self.send(
                 CreatedFileFSInputEvent(
                     file_path=event.src_path,

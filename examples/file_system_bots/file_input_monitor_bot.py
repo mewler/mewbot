@@ -12,9 +12,9 @@ from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
 from mewbot.io.file_system import (
     FSInputEvent,
-    CreatedFileFSInputEvent,
     UpdatedFileFSInputEvent,
-    DeletedFileFSInputEvent,
+    InputFileFileCreationInputEvent,
+    InputFileFileDeletionInputEvent,
 )
 
 
@@ -25,12 +25,21 @@ class FileSystemAllCommandTrigger(Trigger):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {CreatedFileFSInputEvent, UpdatedFileFSInputEvent, DeletedFileFSInputEvent}
+        return {
+            InputFileFileCreationInputEvent,
+            UpdatedFileFSInputEvent,
+            InputFileFileDeletionInputEvent,
+        }
 
     def matches(self, event: InputEvent) -> bool:
 
         if not isinstance(
-            event, (CreatedFileFSInputEvent, UpdatedFileFSInputEvent, DeletedFileFSInputEvent)
+            event,
+            (
+                InputFileFileCreationInputEvent,
+                UpdatedFileFSInputEvent,
+                InputFileFileDeletionInputEvent,
+            ),
         ):
             return False
 
@@ -51,7 +60,11 @@ class FileSystemInputPrintResponse(Action):
 
     @staticmethod
     def consumes_inputs() -> Set[Type[InputEvent]]:
-        return {CreatedFileFSInputEvent, UpdatedFileFSInputEvent, DeletedFileFSInputEvent}
+        return {
+            InputFileFileCreationInputEvent,
+            UpdatedFileFSInputEvent,
+            InputFileFileDeletionInputEvent,
+        }
 
     @staticmethod
     def produces_outputs() -> Set[Type[OutputEvent]]:

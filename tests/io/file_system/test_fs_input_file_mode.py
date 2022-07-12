@@ -42,10 +42,21 @@ class TestFileTypeFSInput:
     async def test_FileTypeFSInput__init__input_path_nonsense(self) -> None:
         """
         Tests that we can start an isolated copy of FileTypeFSInput - for testing purposes.
-
         """
-        test_fs_input = FileTypeFSInput(input_path="\\///blargleblarge_not_a_path")
+        input_path_str = "\\///blargleblarge_not_a_path"
+        test_fs_input = FileTypeFSInput(input_path=input_path_str)
         assert isinstance(test_fs_input, FileTypeFSInput)
+
+        # Test attributes which should have been set
+        assert test_fs_input.input_path == input_path_str
+        test_fs_input.input_path = "//\\another thing which does not exist"
+
+        assert test_fs_input.input_path_exists is False
+
+        try:
+            test_fs_input.input_path_exists = True
+        except AttributeError:
+            pass
 
     @pytest.mark.asyncio
     async def test_FileTypeFSInput__init__input_path_existing_dir(self) -> None:
@@ -56,4 +67,7 @@ class TestFileTypeFSInput:
         with tempfile.TemporaryDirectory() as tmp_dir_path:
             test_fs_input = FileTypeFSInput(input_path=tmp_dir_path)
             assert isinstance(test_fs_input, FileTypeFSInput)
-            del test_fs_input
+
+            assert test_fs_input.input_path == tmp_dir_path
+            assert test_fs_input.input_path_exists is True
+

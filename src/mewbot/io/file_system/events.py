@@ -22,6 +22,13 @@ class FileFSInputEvent(FSInputEvent):
     file_async_path: aiopath.AsyncPath
 
 
+#
+# --------------------------------------
+# - INPUT - FILE TYPE
+# --------------------------------------
+#
+
+
 @dataclasses.dataclass
 class CreatedFileFSInputEvent(FileFSInputEvent):
     """
@@ -65,6 +72,35 @@ class DeletedFileFSInputEvent(FileFSInputEvent):
     which is being monitored.
     Cannot provide any more information without caching a lot of details about the FS.
     """
+
+
+@dataclasses.dataclass
+class InputFileFileCreationInputEvent(FSInputEvent):
+    """
+    Event called when a file comes into existence at the monitored location - the input location.
+    Note - the input cannot destinguish between a file being created or moved to the input location.
+    """
+
+    file_path: str
+    file_async_path: aiopath.AsyncPath
+
+
+@dataclasses.dataclass
+class InputFileFileDeletionInputEvent(FSInputEvent):
+    """
+    Event called when a file is removed from the monitored location - the input location.
+    Note - the input cannot distinguish between a file being deleted or moved away from the input location.
+    """
+
+    file_path: str
+    file_async_path: aiopath.AsyncPath
+
+
+#
+# --------------------------------------
+# - INPUT - DIR TYPE
+# --------------------------------------
+#
 
 
 @dataclasses.dataclass
@@ -112,6 +148,35 @@ class DeletedDirFSInputEvent(DirFSInputEvent):
     """
     A dir has been deleted - either in the dir we're monitoring - if we're monitoring one.
     """
+
+
+@dataclasses.dataclass
+class InputFileDirCreationInputEvent(FSInputEvent):
+    """
+    Event called when a dir comes into existence at the monitored location - the input location.
+    Note - the input cannot distinguish between a dir being created or moved to the input location.
+    """
+
+    dir_path: str
+    dir_async_path: aiopath.AsyncPath
+
+
+@dataclasses.dataclass
+class InputFileDirDeletionInputEvent(FSInputEvent):
+    """
+    Event called when a dir is removed from the monitored location - the input location.
+    Note - the input cannot distinguish between a dir being deleted or moved away from the input location.
+    """
+
+    dir_path: str
+    dir_async_path: aiopath.AsyncPath
+
+
+#
+# --------------------------------------
+# - OUTPUT
+# --------------------------------------
+#
 
 
 @dataclasses.dataclass

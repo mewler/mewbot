@@ -18,6 +18,8 @@ from mewbot.io.file_system import (
     CreatedFileFSInputEvent,
     UpdatedFileFSInputEvent,
     DeletedFileFSInputEvent,
+    InputFileDirCreationInputEvent,
+    InputFileDirDeletionInputEvent
 )
 
 
@@ -35,6 +37,8 @@ class DirSystemAllCommandTrigger(Trigger):
             CreatedFileFSInputEvent,
             UpdatedFileFSInputEvent,
             DeletedFileFSInputEvent,
+            InputFileDirCreationInputEvent,
+            InputFileDirDeletionInputEvent
         }
 
     def matches(self, event: InputEvent) -> bool:
@@ -48,6 +52,8 @@ class DirSystemAllCommandTrigger(Trigger):
                 CreatedFileFSInputEvent,
                 UpdatedFileFSInputEvent,
                 DeletedFileFSInputEvent,
+                InputFileDirCreationInputEvent,
+                InputFileDirDeletionInputEvent
             ),
         ):
             return False
@@ -76,6 +82,8 @@ class DirSystemInputPrintResponse(Action):
             CreatedFileFSInputEvent,
             UpdatedFileFSInputEvent,
             DeletedFileFSInputEvent,
+            InputFileDirCreationInputEvent,
+            InputFileDirDeletionInputEvent
         }
 
     @staticmethod
