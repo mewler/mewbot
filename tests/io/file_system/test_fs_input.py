@@ -23,21 +23,6 @@ class TestFileTypeFSInput:
 
     ...
 
-    # @pytest.mark.asyncio
-    # async def test_FileTypeFSInput_run_without_error_existing_dir(self) -> None:
-    #     """
-    #     Tests that the run method of the input class does not throw an error.
-    #     Testing on a dir which actually exists
-    #     """
-    #     with tempfile.TemporaryDirectory() as tmp_dir_path:
-    #         test_fs_input = FileTypeFSInput(input_path=tmp_dir_path)
-    #         assert isinstance(test_fs_input, FileTypeFSInput)
-    #
-    #         # We need to retain control of the thread to shutdown
-    #         asyncio.get_running_loop().create_task(test_fs_input.run())
-    #
-    #         await asyncio.sleep(0.5)
-    #         # Note - manually stopping the loop seems to lead to a rather nasty cash
 
     # @pytest.mark.asyncio
     # async def test_FileTypeFSInput_existing_dir_io_in_existing_dir(self) -> None:
