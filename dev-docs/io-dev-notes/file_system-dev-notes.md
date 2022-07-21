@@ -200,13 +200,70 @@ Neither of them likes it if you remove the location they're monitoring and recre
 
 So probably need to use both for different operational modes - possibly with some mods so that the system knows when monitoring fails and to resume.
 
-These operational modes - probably should be seperate input classes on balance.
+These operational modes - probably should be separate input classes on balance.
 With the selection between them controlled by the type of resource the user declares it is - force them to be specific.
 This seems less likely to lead to unexpected behavior (for example, the edge case of starting with a file, then the user deletes it, then they create a dir in its place. You might then get a bunch of file events - for files created in the new folder - which you might not reason about correctly.)
 
 Note - there might not be a good way to tell what's going on - so it might be best to have SPECIFIC events for the monitoring target being created or deleted - so the user can watch for those explicitly, and not have to, e.g., check every dir deleted event in a dir monitoring scenario to see if it's the target directory which has been deleted).
 
 In fact - that seems a necessary and obvious thing to do... so more refactoring and more work on the examples.
+
+#### Actually, that didn't help so much
+
+Turns out the problem may be more with how windows monitors files through it's internal api than with watchdog/watchfiles itself.
+
+In particular, the problem which is currently proving to be an issue is the fact that events are being produced out of order - or, at least, in an unhelpful order.
+So you might get a couple of file modified events before finally getting the deleted one.
+Or, perhaps, a move event might occur and put a new file in the place of the deleted on - so you get a deletion event for a file which is, in fact, still there.
+This is something of a difficulty.
+
+Best way I've come up with so far
+* every time there is a modification event, check to see if the file still exists
+  * If the file does not exist - check the cache to see if we've notified the user and, if we have, do nothing. If we have not, then send the event and note it in the cache
+  * If the file does exist then emit the event as normal
+* If the system acknowledges the delete, then there seem to be no more modification events - so you can remove the file from the cache. If we see any more changes, then it's (probably) for a new file which has replaced the old one.
+
+Hopefully, once a file has been moved into place of the old one, then any modification or move events are legit.
+
+Thought - as the logic of this whole process is getting quite involved, it might be for the best if the user can just inform the system that they just want the raw events coming off the watcher.
+Incase the additionally caching and other stuff is proving unhelpful.
+
+#### Am I just doing Windows file monitoring very wrong?
+
+ENTIRELY possible!
+
+So the watcher seemed to be producing Windows file events in what can only be characterised as a suboptimal manner.
+Though I'm sorta just hoping I'm doing it wrong in some way.
+
+Take a file - then delete it.
+ - You will not, necessarily, get a clean deletion event.
+ - Instead, you seem to get a number of update events - then the deletion event
+ - Unless you _immediately_ create a new file in its place. In which case, you sometimes never get the delete action - sometimes - and instead get more update actions
+ - Moving files around also seems to cause some confusion - though that might be more of a python thing.
+ - Sometimes - the ordering is not what one might call regular. 
+ - Sometimes events are delayed until after other events - for some reason.
+ - But not always.
+ - Testing this is proving to be a bit of an issue (thing I might move to a promise model - break it down for each file and dir, and at least check that events concerning them are arriving in the right order)
+
+I've tried to implement some smoothing - using os calls to tell if a file is _really_ gone or not, and then shaping the actual events produced appropriately.
+The best I've been able to come up with so far for an algorithm is as follows.
+
+Solved this problem - with some caching and some checking of the actual files on disk - less than ideal and does result in more disk churn than I would like - but seemed the only way to run it.
+
+Then it turned out that the monitor sometimes (often) confuses dirs and files.
+So I spun the entire watcher out into an os specific class - because now it's having to do a lot of computational grunt work to actually ensure the events reflect reality - and none of that should be necessary on linux e.t.c.
+This turns out to also be an issue for move events - going to expriment with different backends.
+
+
+
+
+
+
+
+
+
+
+
 
 
 

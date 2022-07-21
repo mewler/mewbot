@@ -1,0 +1,399 @@
+# Aim is to run, in sections, as many of the input methods as possible
+# Including running a full bot with logging triggers and actions.
+# However, individual components also have to be isolated for testing purposes.
+
+import asyncio
+import os
+import shutil
+import tempfile
+
+from typing import Tuple
+
+import pytest
+
+from mewbot.api.v1 import InputEvent
+from mewbot.io.file_system import (
+    DirTypeFSInput,
+)
+
+from .utils import FileSystemTestUtils
+
+
+# pylint: disable=invalid-name
+# for clarity, test functions should be named after the things they test
+# which means CamelCase in function names
+
+
+class TestDirTypeFSInput(FileSystemTestUtils):
+
+    # - INIT AND ATTRIBUTES
+
+    @pytest.mark.asyncio
+    async def test_DirTypeFSInput__init__input_path_None(self) -> None:
+        """
+        Tests that we can start an isolated copy of FileTypeFSInput - for testing purposes.
+        input_path is set to None
+        """
+        test_fs_input = DirTypeFSInput(input_path=None)
+        assert isinstance(test_fs_input, DirTypeFSInput)
+
+    @pytest.mark.asyncio
+    async def test_DirTypeFSInput__init__input_path_nonsense(self) -> None:
+        """
+        Tests that we can start an isolated copy of FileTypeFSInput - for testing purposes.
+        """
+        input_path_str = "\\///blargleblarge_not_a_path"
+        test_fs_input = DirTypeFSInput(input_path=input_path_str)
+
+        assert test_fs_input.input_path_exists is False
+
+        # Test attributes which should have been set
+        assert test_fs_input.input_path == input_path_str
+        test_fs_input.input_path = "//\\another thing which does not exist"
+
+        try:
+            test_fs_input.input_path_exists = True
+        except AttributeError:
+            pass
+
+        assert test_fs_input.input_path_exists is False
+
+    @pytest.mark.asyncio
+    async def test_DirTypeFSInput__init__input_path_existing_dir(self) -> None:
+        """
+        Tests that we can start an isolated copy of FileTypeFSInput - for testing purposes.
+
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            test_fs_input = DirTypeFSInput(input_path=tmp_dir_path)
+
+            assert test_fs_input.input_path == tmp_dir_path
+            assert test_fs_input.input_path_exists is True
+
+            assert isinstance(test_fs_input, DirTypeFSInput)
+
+    # - RUNNING TO DETECT FILE CHANGES
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_file(self) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_file_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            with open(new_file_path, "w", encoding="utf-16") as output_file:
+                output_file.write("Here we go")
+            await self.process_file_creation_response(output_queue, file_path=new_file_path)
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_update_file(self) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_file_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            with open(new_file_path, "w", encoding="utf-16") as output_file:
+                output_file.write("Here we go")
+            await self.process_file_creation_response(output_queue, file_path=new_file_path)
+
+            with open(new_file_path, "a", encoding="utf-16") as output_file:
+                output_file.write("Here we go again")
+            await self.process_file_update_response(output_queue, file_path=new_file_path)
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_cre_upd_del_file(self) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        Followed by deleting that file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_file_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            with open(new_file_path, "w", encoding="utf-16") as output_file:
+                output_file.write("Here we go")
+            await self.process_file_creation_response(output_queue, file_path=new_file_path)
+
+            with open(new_file_path, "a", encoding="utf-16") as output_file:
+                output_file.write("Here we go again")
+            await self.process_file_update_response(output_queue, file_path=new_file_path)
+
+            os.unlink(new_file_path)
+            await self.process_file_deletion_response(output_queue, file_path=new_file_path)
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_cre_upd_del_file_loop(self) -> None:
+        """
+        Check for expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        Then an attempt to delete the file.
+        This is done in a loop - to check for any problems with stale events
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for i in range(10):
+
+                # - Using blocking methods - this should still work
+                new_file_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+                with open(new_file_path, "w", encoding="utf-16") as output_file:
+                    output_file.write("Here we go")
+                await self.process_file_creation_response(
+                    output_queue, file_path=new_file_path
+                )
+
+                with open(new_file_path, "a", encoding="utf-16") as output_file:
+                    output_file.write(f"Here we go again - {i}")
+                await self.process_file_update_response(output_queue, file_path=new_file_path)
+
+                os.unlink(new_file_path)
+                await self.process_file_deletion_response(
+                    output_queue, file_path=new_file_path
+                )
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_update_move_file(self) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_file_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            with open(new_file_path, "w", encoding="utf-16") as output_file:
+                output_file.write("Here we go")
+            await self.process_file_creation_response(output_queue, file_path=new_file_path)
+
+            with open(new_file_path, "a", encoding="utf-16") as output_file:
+                output_file.write("Here we go again")
+            await self.process_file_update_response(output_queue, file_path=new_file_path)
+
+            # Move a file to a different location
+            post_move_file_path = os.path.join(tmp_dir_path, "moved_text_file_delete_me.txt")
+            os.rename(src=new_file_path, dst=post_move_file_path)
+
+            await self.process_file_deletion_response(output_queue, file_path=new_file_path)
+            await self.process_file_move_response(
+                output_queue, file_src_parth=new_file_path, file_dst_path=post_move_file_path
+            )
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_update_move_file_loop(self) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for i in range(10):
+
+                # - Using blocking methods - this should still work
+                new_file_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+                with open(new_file_path, "w", encoding="utf-16") as output_file:
+                    output_file.write("Here we go")
+                await self.process_file_creation_response(
+                    output_queue, file_path=new_file_path
+                )
+
+                with open(new_file_path, "a", encoding="utf-16") as output_file:
+                    output_file.write(f"Here we go again - {i}")
+                await self.process_file_update_response(output_queue, file_path=new_file_path)
+
+                # Move a file to a different location
+                post_move_file_path = os.path.join(
+                    tmp_dir_path, "moved_text_file_delete_me.txt"
+                )
+                os.rename(src=new_file_path, dst=post_move_file_path)
+
+                # I think this is a windows problem - probably.
+                await self.process_file_deletion_response(
+                    output_queue, file_path=new_file_path
+                )
+                await self.process_file_move_response(
+                    output_queue,
+                    file_src_parth=new_file_path,
+                    file_dst_path=post_move_file_path,
+                )
+
+                os.unlink(post_move_file_path)
+                await self.process_file_deletion_response(
+                    output_queue, file_path=post_move_file_path
+                )
+
+            await self.cancel_task(run_task)
+
+    # - RUNNING TO DETECT DIR CHANGES
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_dir(self) -> None:
+        """
+        Check for the expected created signal from a dir which is created in a monitored dir
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            os.mkdir(new_dir_path)
+            await self.process_dir_creation_response(output_queue, dir_path=new_dir_path)
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_cre_del_dir(self) -> None:
+        """
+        Check that we get the expected created signal from a dir created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            os.mkdir(new_dir_path)
+            await self.process_dir_creation_response(output_queue, dir_path=new_dir_path)
+
+            shutil.rmtree(new_dir_path)
+            await self.process_dir_deletion_response(output_queue, dir_path=new_dir_path)
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_cre_del_dir_loop(self) -> None:
+        """
+        Checks we get the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        Then an attempt to delete the file.
+        This is done in a loop - to check for any problems with stale events
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for _ in range(10):
+                # - Using blocking methods - this should still work
+                new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me_txt")
+
+                os.mkdir(new_dir_path)
+                await self.process_dir_creation_response(output_queue, dir_path=new_dir_path)
+
+                shutil.rmtree(new_dir_path)
+                await self.process_dir_deletion_response(output_queue, dir_path=new_dir_path)
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_move_dir(self) -> None:
+        """
+        Checks we get the expected created signal from a dir which is created in a monitored dir
+        Followed by moving the dir.
+        """
+
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            os.mkdir(new_dir_path)
+            await self.process_dir_creation_response(output_queue, dir_path=new_dir_path)
+
+            # Move a file to a different location
+            post_move_dir_path = os.path.join(tmp_dir_path, "moved_text_file_delete_me.txt")
+            os.rename(src=new_dir_path, dst=post_move_dir_path)
+
+            # This is an asymmetry between how files and folders handle delete
+            # left in while I try and think how to deal sanely with it
+            # await self.process_dir_deletion_response(output_queue, dir_path=new_dir_path)
+            await self.process_dir_move_response(
+                output_queue, dir_src_parth=new_dir_path, dir_dst_path=post_move_dir_path
+            )
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    async def testDirTypeFSInput_existing_dir_create_move_dir_loop(self) -> None:
+        """
+        Checks we get the expected created signal from a dir which is created in a monitored dir
+        Followed by moving the dir.
+        Repeated in a loop.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for _ in range(10):
+
+                # - Using blocking methods - this should still work
+                new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+                os.mkdir(new_dir_path)
+                await self.process_dir_creation_response(output_queue, dir_path=new_dir_path)
+
+                # Move a file to a different location
+                post_move_dir_path = os.path.join(
+                    tmp_dir_path, "moved_text_file_delete_me.txt"
+                )
+                os.rename(src=new_dir_path, dst=post_move_dir_path)
+
+                # I think this is a windows problem - probably.
+                await self.process_dir_move_response(
+                    output_queue, dir_src_parth=new_dir_path, dir_dst_path=post_move_dir_path
+                )
+
+                shutil.rmtree(post_move_dir_path)
+                await self.process_dir_deletion_response(
+                    output_queue, dir_path=post_move_dir_path
+                )
+
+            await self.cancel_task(run_task)
+
+    @staticmethod
+    async def get_DirTypeFSInput(
+        input_path: str,
+    ) -> Tuple[asyncio.Task[None], asyncio.Queue[InputEvent]]:
+
+        test_fs_input = DirTypeFSInput(input_path=input_path)
+        assert isinstance(test_fs_input, DirTypeFSInput)
+
+        output_queue: asyncio.Queue[InputEvent] = asyncio.Queue()
+        test_fs_input.queue = output_queue
+
+        # We need to retain control of the thread to delay shutdown
+        # And to probe the results
+        run_task = asyncio.get_running_loop().create_task(test_fs_input.run())
+
+        # Give the class a chance to actually do init
+        await asyncio.sleep(0.5)
+
+        return run_task, output_queue

@@ -27,7 +27,7 @@ from mewbot.io.file_system.events import (
     DeleteFileFSOutputEvent,
     OverwriteFileFSOutputEvent,
 )
-from mewbot.io.file_system.input import FileTypeFSInput, DirTypeFSInput
+from mewbot.io.file_system.inputs import FileTypeFSInput, DirTypeFSInput
 from mewbot.io.file_system.output import FileSystemOutput
 
 __all__ = (

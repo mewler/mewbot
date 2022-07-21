@@ -11,15 +11,16 @@ import logging
 from mewbot.api.v1 import Trigger, Action
 from mewbot.core import InputEvent, OutputEvent, OutputQueue
 from mewbot.io.file_system import (
-    FSInputEvent,
     CreatedDirFSInputEvent,
     UpdatedDirFSInputEvent,
+    MovedDirFSInputEvent,
     DeletedDirFSInputEvent,
     CreatedFileFSInputEvent,
     UpdatedFileFSInputEvent,
+    MovedFileFSInputEvent,
     DeletedFileFSInputEvent,
     InputFileDirCreationInputEvent,
-    InputFileDirDeletionInputEvent
+    InputFileDirDeletionInputEvent,
 )
 
 
@@ -33,27 +34,33 @@ class DirSystemAllCommandTrigger(Trigger):
         return {
             CreatedDirFSInputEvent,
             UpdatedDirFSInputEvent,
+            MovedDirFSInputEvent,
             DeletedDirFSInputEvent,
             CreatedFileFSInputEvent,
             UpdatedFileFSInputEvent,
+            MovedFileFSInputEvent,
             DeletedFileFSInputEvent,
             InputFileDirCreationInputEvent,
-            InputFileDirDeletionInputEvent
+            InputFileDirDeletionInputEvent,
         }
 
     def matches(self, event: InputEvent) -> bool:
+
+        print("-------\n", "event seen by matches - ", event, "\n-------")
 
         if not isinstance(
             event,
             (
                 CreatedDirFSInputEvent,
                 UpdatedDirFSInputEvent,
+                MovedDirFSInputEvent,
                 DeletedDirFSInputEvent,
                 CreatedFileFSInputEvent,
+                MovedFileFSInputEvent,
                 UpdatedFileFSInputEvent,
                 DeletedFileFSInputEvent,
                 InputFileDirCreationInputEvent,
-                InputFileDirDeletionInputEvent
+                InputFileDirDeletionInputEvent,
             ),
         ):
             return False
@@ -78,12 +85,14 @@ class DirSystemInputPrintResponse(Action):
         return {
             CreatedDirFSInputEvent,
             UpdatedDirFSInputEvent,
+            MovedDirFSInputEvent,
             DeletedDirFSInputEvent,
             CreatedFileFSInputEvent,
             UpdatedFileFSInputEvent,
+            MovedFileFSInputEvent,
             DeletedFileFSInputEvent,
             InputFileDirCreationInputEvent,
-            InputFileDirDeletionInputEvent
+            InputFileDirDeletionInputEvent,
         }
 
     @staticmethod
@@ -94,8 +103,8 @@ class DirSystemInputPrintResponse(Action):
         """
         Construct a DiscordOutputEvent with the result of performing the calculation.
         """
-        if not isinstance(event, FSInputEvent):
+        if not isinstance(event, InputEvent):
             self._logger.warning("Received wrong event type %s", type(event))
             return
 
-        print("event seen by action - ", event)
+        print("-------\n", "event seen by action - ", event, "\n-------")

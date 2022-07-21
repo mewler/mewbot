@@ -10,15 +10,15 @@ kind: Behaviour
 implementation: mewbot.api.v1.Behaviour
 uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa01
 properties:
-  name: 'Target File Change Alerts'
+  name: 'Target Dir Change Alerts'
 triggers:
   - kind: Trigger
-    implementation: examples.file_system_bots.file_input_monitor_bot.FileSystemAllCommandTrigger
+    implementation: examples.file_system_bots.dir_input_monitor_bot.DirSystemAllCommandTrigger
     uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa02
     properties: {}
 conditions: []
 actions:
   - kind: Action
-    implementation: examples.file_system_bots.file_input_monitor_bot.FileSystemInputPrintResponse
+    implementation: examples.file_system_bots.dir_input_monitor_bot.DirSystemInputPrintResponse
     uuid: aaaaaaaa-aaaa-4aaa-0001-aaaaaaaaaa03
     properties: {}
