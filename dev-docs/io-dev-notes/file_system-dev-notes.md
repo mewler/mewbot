@@ -252,7 +252,25 @@ Solved this problem - with some caching and some checking of the actual files on
 
 Then it turned out that the monitor sometimes (often) confuses dirs and files.
 So I spun the entire watcher out into an os specific class - because now it's having to do a lot of computational grunt work to actually ensure the events reflect reality - and none of that should be necessary on linux e.t.c.
-This turns out to also be an issue for move events - going to expriment with different backends.
+This turns out to also be an issue for move events - going to experiment with different backends.
+But, for the moment, the situation has been fixed with some caching and parsing to try and force the output of the class to conform to something resembling reality.
+This was augmented with check calls using os.path.exists
+This solution is less than elegant, and probably horribly inefficient. But it works. Ish.
+New backend for linux will follow. When I regain the will.
+
+### Output
+
+For the moment only supporting writing files into a directory (subfolders e.t.c can wait).
+And only supporting
+ - creation
+ - update - appending
+ - overwrite
+ - deletion
+For simplicity, all 16 of the basic write modes ARE NOT supported - just these four (well - eight - as you can toggle binary on and off)
+
+These events must be explicitly created - and will fail.
+To stop the proliferation of message classes, there's a switch in the base class for binary or not.
+
 
 
 
