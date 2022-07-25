@@ -317,14 +317,14 @@ class TestFileTypeFSInput(FileSystemTestUtils):
 
                 await asyncio.sleep(0.5)
 
-                await self.verify_queue_is_empty(output_queue, task_done=False)
+                await self.verify_queue_size(output_queue, task_done=False)
 
                 # Delete the file - the class should also not respond
                 os.rmdir(tmp_file_path)
 
                 await asyncio.sleep(0.5)
 
-                await self.verify_queue_is_empty(output_queue, task_done=False)
+                await self.verify_queue_size(output_queue, task_done=False)
 
                 with open(tmp_file_path, "w", encoding="utf-8") as test_outfile:
                     test_outfile.write("We are testing mewbot!")
