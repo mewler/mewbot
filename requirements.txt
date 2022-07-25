@@ -11,5 +11,5 @@ setuptools~=62.6
 win10toast~=0.9; sys_platform == "win32"
 
 watchfiles~=0.15.0
-aiopath~=0.6.10
+aiopath~=0.5.12
 watchdog~=2.1.9

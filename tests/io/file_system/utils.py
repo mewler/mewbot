@@ -13,6 +13,7 @@ from mewbot.io.file_system import (
     DeletedFileFSInputEvent,
     CreatedDirFSInputEvent,
     MovedDirFSInputEvent,
+    UpdatedDirFSInputEvent,
     DeletedDirFSInputEvent,
 )
 
@@ -23,6 +24,7 @@ class FileSystemTestUtils:
         output_queue: asyncio.Queue[InputEvent],
         file_path: Optional[str] = None,
         allow_update_events_in_queue_after: bool = False,
+        message: str = ""
     ) -> None:
         """
         Get the next event off the queue.
@@ -33,7 +35,7 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
         assert isinstance(
             queue_out, CreatedFileFSInputEvent
-        ), f"Expected CreatedFileFSInputEvent - got {queue_out}"
+        ), f"Expected CreatedFileFSInputEvent - got {queue_out}" + f" - {message}" if message else ""
 
         if file_path is not None:
             assert queue_out.file_path == file_path
@@ -55,7 +57,7 @@ class FileSystemTestUtils:
                 ), f"Expected UpdatedFileFSInputEvent - got {queue_out}"
 
     async def process_file_update_response(
-        self, output_queue: asyncio.Queue[InputEvent], file_path: Optional[str] = None
+        self, output_queue: asyncio.Queue[InputEvent], file_path: Optional[str] = None, message: str = ""
     ) -> None:
         """
         Get the next event off the queue - check that it's one for the input file being deleted.
@@ -64,7 +66,7 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
         assert isinstance(
             queue_out, UpdatedFileFSInputEvent
-        ), f"Expected UpdatedFileFSInputEvent - got {queue_out}"
+        ), f"Expected UpdatedFileFSInputEvent - got {queue_out}" + f" - {message}" if message else ""
 
         if file_path is not None:
             assert file_path == queue_out.file_path
@@ -95,7 +97,7 @@ class FileSystemTestUtils:
         await self.verify_queue_is_empty(output_queue)
 
     async def process_file_deletion_response(
-        self, output_queue: asyncio.Queue[InputEvent], file_path: Optional[str] = None
+        self, output_queue: asyncio.Queue[InputEvent], file_path: Optional[str] = None, message: str = ""
     ) -> None:
         """
         Get the next event off the queue - check that it's one for the input file being deleted.
@@ -105,7 +107,7 @@ class FileSystemTestUtils:
         if file_path is not None:
             assert isinstance(
                 queue_out, DeletedFileFSInputEvent
-            ), f"expected DeletedFileFSInputEvent - got {queue_out}"
+            ), f"expected DeletedFileFSInputEvent - got {queue_out}" + f" - {message}" if message else ""
             assert file_path == queue_out.file_path
 
         # At this point the queue should be empty.
@@ -129,6 +131,24 @@ class FileSystemTestUtils:
         assert isinstance(
             queue_out, CreatedDirFSInputEvent
         ), f"Expected CreatedDirFSInputEvent - got {queue_out}"
+        if dir_path is not None:
+            assert queue_out.dir_path == dir_path
+
+        await self.verify_queue_is_empty(output_queue)
+
+    async def process_dir_update_response(
+        self, output_queue: asyncio.Queue[InputEvent], dir_path: Optional[str] = None, message: str = ""
+    ) -> None:
+        """
+        Get the next event off the queue - check that it's one for a file being created in the
+        input dir.
+        """
+
+        # This should have generated an event
+        queue_out = await output_queue.get()
+        assert isinstance(
+            queue_out, UpdatedDirFSInputEvent
+        ), f"Expected UpdatedDirFSInputEvent - got {queue_out}" + f" - {message}" if message else ""
         if dir_path is not None:
             assert queue_out.dir_path == dir_path
 

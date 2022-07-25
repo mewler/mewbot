@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os.path
-from typing import Optional, Set, Type, Any
+import sys
+
+from typing import Optional, Set, Type, Any, Union
 
 import asyncio
 import logging
@@ -25,7 +27,7 @@ from mewbot.io.file_system.events import (
     InputFileDirCreationInputEvent,
     InputFileDirDeletionInputEvent,
 )
-from mewbot.io.file_system.monitors import WindowsFileSystemObserver
+from mewbot.io.file_system.monitors import WindowsFileSystemObserver, LinuxFileSystemObserver
 
 
 class FileTypeFSInput(Input):
@@ -370,6 +372,11 @@ class DirTypeFSInput(Input):
         else:
             raise NotImplementedError
 
+        # Because of backend issues the observer is OS dependant
+        self._platform_str = sys.platform
+        # Not using an f-string because we want lazy evaluation if possible
+        self._logger.info("We are detected as running on %s", self._platform_str)
+
     @staticmethod
     def produces_inputs() -> Set[Type[InputEvent]]:
         """
@@ -439,10 +446,19 @@ class DirTypeFSInput(Input):
             assert self.input_path is not None
 
             # There's something at the location - it should be a dir - activate the watcher
-            file_system_observer = WindowsFileSystemObserver(
-                output_queue=self.queue, input_path=self.input_path
-            )
-            self._input_path_exists = await file_system_observer.monitor_dir_watcher()
+            file_system_observer: Union[WindowsFileSystemObserver, LinuxFileSystemObserver]
+            if self._platform_str == "win32":
+                file_system_observer = WindowsFileSystemObserver(
+                    output_queue=self.queue, input_path=self.input_path
+                )
+
+                self._input_path_exists = await file_system_observer.monitor_dir_watcher()
+            else:
+                file_system_observer = LinuxFileSystemObserver(
+                    output_queue=self.queue, input_path=self.input_path
+                )
+
+                self._input_path_exists = await file_system_observer.monitor_dir_watcher()
 
     async def _monitor_input_path(self) -> None:
         """
