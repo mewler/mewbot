@@ -292,8 +292,13 @@ class WindowsFileSystemObserver:
                 return
 
             # Inotify on linux also notifies you of a change to the folder in this case
-            await self.send(UpdatedDirFSInputEvent(
-                dir_path=self._input_path, dir_async_path=aiopath.AsyncPath(self._input_path), base_event=None))
+            await self.send(
+                UpdatedDirFSInputEvent(
+                    dir_path=self._input_path,
+                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                    base_event=None,
+                )
+            )
 
             await self.send(
                 UpdatedFileFSInputEvent(
@@ -317,8 +322,13 @@ class WindowsFileSystemObserver:
             # The user can be informed again that the file exists
             self._python_registers_created_cache.remove(event.src_path)
 
-            await self.send(UpdatedDirFSInputEvent(
-                dir_path=self._input_path, dir_async_path=aiopath.AsyncPath(self._input_path), base_event=None))
+            await self.send(
+                UpdatedDirFSInputEvent(
+                    dir_path=self._input_path,
+                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                    base_event=None,
+                )
+            )
 
             await self.send(
                 DeletedFileFSInputEvent(
@@ -398,8 +408,13 @@ class WindowsFileSystemObserver:
             if event.src_path in self._dir_cache:
 
                 # Inotify on linux also notifies you of a change to the folder in this case
-                await self.send(UpdatedDirFSInputEvent(
-                    dir_path=self._input_path, dir_async_path=aiopath.AsyncPath(self._input_path), base_event=None))
+                await self.send(
+                    UpdatedDirFSInputEvent(
+                        dir_path=self._input_path,
+                        dir_async_path=aiopath.AsyncPath(self._input_path),
+                        base_event=None,
+                    )
+                )
 
                 await self.send(
                     DeletedDirFSInputEvent(
@@ -411,8 +426,13 @@ class WindowsFileSystemObserver:
                 return
 
             # Inotify on linux also notifies you of a change to the folder in this case
-            await self.send(UpdatedDirFSInputEvent(
-                dir_path=self._input_path, dir_async_path=aiopath.AsyncPath(self._input_path), base_event=None))
+            await self.send(
+                UpdatedDirFSInputEvent(
+                    dir_path=self._input_path,
+                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                    base_event=None,
+                )
+            )
 
             await self.send(
                 DeletedFileFSInputEvent(
@@ -736,10 +756,6 @@ class LinuxFileSystemObserver:
     async def _process_file_delete_event(
         self, event: watchdog.events.FileDeletedEvent
     ) -> None:
-
-        # Inotify on linux also notifies you of a change to the folder in this case
-        await self.send(UpdatedDirFSInputEvent(
-            dir_path=self._input_path, dir_async_path=aiopath.AsyncPath(self._input_path), base_event=None))
 
         await self.send(
             DeletedFileFSInputEvent(

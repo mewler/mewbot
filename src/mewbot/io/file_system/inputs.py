@@ -448,6 +448,7 @@ class DirTypeFSInput(Input):
             # There's something at the location - it should be a dir - activate the watcher
             file_system_observer: Union[WindowsFileSystemObserver, LinuxFileSystemObserver]
             if self._platform_str == "win32":
+
                 file_system_observer = WindowsFileSystemObserver(
                     output_queue=self.queue, input_path=self.input_path
                 )

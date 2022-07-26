@@ -41,10 +41,10 @@ class FileSystemTestUtils:
 
         # This should have generated an event
         queue_out = await output_queue.get()
-        assert isinstance(queue_out, CreatedFileFSInputEvent), (
-            f"Expected CreatedFileFSInputEvent - got {queue_out}" + f" - {message}"
-            if message
-            else ""
+        assert isinstance(
+            queue_out, CreatedFileFSInputEvent
+        ), f"Expected CreatedFileFSInputEvent - got {queue_out}" + (
+            f" - {message}" if message else ""
         )
 
         if file_path is not None:
@@ -77,10 +77,10 @@ class FileSystemTestUtils:
         """
         # This should have generated an event
         queue_out = await output_queue.get()
-        assert isinstance(queue_out, UpdatedFileFSInputEvent), (
-            f"Expected UpdatedFileFSInputEvent - got {queue_out}" + f" - {message}"
-            if message
-            else ""
+        assert isinstance(
+            queue_out, UpdatedFileFSInputEvent
+        ), f"Expected UpdatedFileFSInputEvent - got {queue_out}" + (
+            f" - {message}" if message else ""
         )
 
         if file_path is not None:
@@ -93,6 +93,7 @@ class FileSystemTestUtils:
         output_queue: asyncio.Queue[InputEvent],
         file_src_parth: Optional[str] = None,
         file_dst_path: Optional[str] = None,
+        message: str = "",
     ) -> None:
         """
         Get the next event off the queue - check that it's one for the input file being deleted.
@@ -101,7 +102,9 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
         assert isinstance(
             queue_out, MovedFileFSInputEvent
-        ), f"Expected MovedFileFSInputEvent - got {queue_out}"
+        ), f"Expected MovedFileFSInputEvent - got {queue_out}" + (
+            f" - {message}" if message else ""
+        )
 
         if file_src_parth is not None:
             assert queue_out.file_src == file_src_parth
@@ -123,10 +126,10 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
 
         if file_path is not None:
-            assert isinstance(queue_out, DeletedFileFSInputEvent), (
-                f"expected DeletedFileFSInputEvent - got {queue_out}" + f" - {message}"
-                if message
-                else ""
+            assert isinstance(
+                queue_out, DeletedFileFSInputEvent
+            ), f"expected DeletedFileFSInputEvent - got {queue_out}" + (
+                f" - {message}" if message else ""
             )
             assert file_path == queue_out.file_path
 
@@ -139,7 +142,7 @@ class FileSystemTestUtils:
         ), f"expected DeletedFileFSInputEvent - got {queue_out}"
 
     async def process_dir_creation_response(
-        self, output_queue: asyncio.Queue[InputEvent], dir_path: Optional[str] = None
+        self, output_queue: asyncio.Queue[InputEvent], dir_path: Optional[str] = None, message: str = ""
     ) -> None:
         """
         Get the next event off the queue - check that it's one for a file being created in the
@@ -150,7 +153,9 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
         assert isinstance(
             queue_out, CreatedDirFSInputEvent
-        ), f"Expected CreatedDirFSInputEvent - got {queue_out}"
+        ), f"Expected CreatedDirFSInputEvent - got {queue_out}" + (
+                f" - {message}" if message else ""
+            )
         if dir_path is not None:
             assert queue_out.dir_path == dir_path
 
@@ -161,7 +166,7 @@ class FileSystemTestUtils:
         output_queue: asyncio.Queue[InputEvent],
         dir_path: Optional[str] = None,
         message: str = "",
-            allowed_queue_size: int = 0,
+        allowed_queue_size: int = 0,
     ) -> None:
         """
         Get the next event off the queue - check that it's one for a file being created in the
@@ -170,11 +175,13 @@ class FileSystemTestUtils:
 
         # This should have generated an event
         queue_out = await output_queue.get()
-        err_str = f"Expected UpdatedDirFSInputEvent - got {queue_out}" + (f" - {message}" if message else "")
+        err_str = f"Expected UpdatedDirFSInputEvent - got {queue_out}" + (
+            f" - {message}" if message else ""
+        )
         assert isinstance(queue_out, UpdatedDirFSInputEvent), err_str
 
         if dir_path is not None:
-            assert queue_out.dir_path == dir_path
+            assert queue_out.dir_path == dir_path, f"expected {dir_path} - got {queue_out.dir_path}"
 
         await self.verify_queue_size(output_queue, allowed_queue_size=allowed_queue_size)
 
@@ -193,7 +200,7 @@ class FileSystemTestUtils:
         await self.verify_queue_size(output_queue)
 
     async def process_input_dir_creation_response(
-        self, output_queue: asyncio.Queue[InputEvent]
+        self, output_queue: asyncio.Queue[InputEvent], message: str = ""
     ) -> None:
         """
         This event is emitted when we're in dir mode, monitoring a dir, which does not yet exist.
@@ -204,7 +211,9 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
         assert isinstance(
             queue_out, InputFileDirCreationInputEvent
-        ), f"Expected InputFileDirCreationInputEvent - got {queue_out}"
+        ), f"Expected InputFileDirCreationInputEvent - got {queue_out}" + (
+            f" - {message}" if message else ""
+        )
 
         await self.verify_queue_size(output_queue)
 
@@ -221,7 +230,7 @@ class FileSystemTestUtils:
         queue_out = await output_queue.get()
         assert isinstance(
             queue_out, MovedDirFSInputEvent
-        ), f"Expected MovedFileFSInputEvent - got {queue_out}"
+        ), f"Expected MovedDirFSInputEvent - got {queue_out}"
 
         if dir_src_parth is not None:
             assert queue_out.dir_path == dir_src_parth
@@ -232,7 +241,10 @@ class FileSystemTestUtils:
         await self.verify_queue_size(output_queue)
 
     async def process_dir_deletion_response(
-        self, output_queue: asyncio.Queue[InputEvent], dir_path: Optional[str] = None
+        self,
+        output_queue: asyncio.Queue[InputEvent],
+        dir_path: Optional[str] = None,
+        message: str = "",
     ) -> None:
         """
         Get the next event off the queue - check that it's one for a file being created in the
@@ -241,13 +253,14 @@ class FileSystemTestUtils:
 
         # This should have generated an event
         queue_out = await output_queue.get()
+
         assert isinstance(
             queue_out, DeletedDirFSInputEvent
-        ), f"Expected DeletedDirFSInputEvent - got {queue_out}"
+        ), f"Expected DeletedDirFSInputEvent - got {queue_out}" + (
+            f" - {message}" if message else ""
+        )
+
         if dir_path is not None:
-            assert isinstance(
-                queue_out, DeletedDirFSInputEvent
-            ), f"Expected DeletedDirFSInputEvent - got {queue_out}"
             assert queue_out.dir_path == dir_path
 
         await self.verify_queue_size(output_queue)
@@ -266,18 +279,22 @@ class FileSystemTestUtils:
 
     @staticmethod
     async def verify_queue_size(
-        output_queue: asyncio.Queue[InputEvent], task_done: bool = True, allowed_queue_size: int = 0
+        output_queue: asyncio.Queue[InputEvent],
+        task_done: bool = True,
+        allowed_queue_size: int = 0,
     ) -> None:
         # There should be no other events in the queue
         output_queue_qsize = output_queue.qsize()
         if allowed_queue_size:
-            assert (
-                output_queue_qsize in  (0, allowed_queue_size)
-            ), f"Output queue actually has {output_queue_qsize} entries " \
-               f"- the allowed_queue_size is either {allowed_queue_size} or zero"
+            assert output_queue_qsize in (0, allowed_queue_size), (
+                f"Output queue actually has {output_queue_qsize} entries "
+                f"- the allowed_queue_size is either {allowed_queue_size} or zero"
+            )
         else:
-            assert output_queue_qsize == 0, f"Output queue actually has {output_queue_qsize} entries " \
-                                            f"- None are allowed"
+            assert output_queue_qsize == 0, (
+                f"Output queue actually has {output_queue_qsize} entries "
+                f"- None are allowed"
+            )
 
         # Indicate to the queue that task processing is complete
         if task_done:
