@@ -28,3 +28,4 @@ examples/TrivialDiscordBot/secrets.json
 /.coverage_html/
 /.pytest_cache/
 /junit.xml
+.coverage*

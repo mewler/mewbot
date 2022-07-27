@@ -258,6 +258,22 @@ This was augmented with check calls using os.path.exists
 This solution is less than elegant, and probably horribly inefficient. But it works. Ish.
 New backend for linux will follow. When I regain the will.
 
+NOTE - I regained the will. But immediately encountered another set of problems.
+
+#### Standardization of output
+
+So the problem seems to be that the windows and linux file monitors just produce some fundamentally different outputs.
+
+I've done some tuning of the windows output to more closely match the linux one - but there ate just too many points where they were different to really make it practical to really make them line up 100 percent.
+(There's stuff you could do - more parsing and caching of items - interruptable delays before putting more files on the wire - that sort of approach. But it's looking like a rather large amount of work and what's there seems good enough.)
+
+AS SUCH - DIR MONITOR OUTPUT IS GOING T0 BE OS DEPENDANT.
+
+Sorry.
+
+There are tests for the windows and for other (linux) like output events - and some smoothing has been done on the windows side to make things more like the linux side. But it's not 100 percent.
+Tests are, however, present for both windows and linux systems to illustrate the differences.
+
 ### Output
 
 For the moment only supporting writing files into a directory (subfolders e.t.c can wait).
