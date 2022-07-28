@@ -498,6 +498,153 @@ class TestDirTypeFSInput(FileSystemTestUtils):
 
             await self.cancel_task(run_task)
 
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Windows only test")
+    async def testDirTypeFSInput_existing_dir_create_update_move_file_in_subfolder_loop_windows(
+        self,
+    ) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+
+            new_subfolder_path = os.path.join(tmp_dir_path, "subfolder_1", "subfolder_2")
+            os.makedirs(new_subfolder_path)
+
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for i in range(10):
+
+                # - Using blocking methods - this should still work
+                new_file_path = os.path.join(new_subfolder_path, "text_file_delete_me.txt")
+
+                with open(new_file_path, "w", encoding="utf-16") as output_file:
+                    output_file.write("Here we go")
+                if i == 0:
+                    await self.process_file_creation_response(
+                        output_queue, file_path=new_file_path, message=f"in loop {i}"
+                    )
+                else:
+                    await self.process_file_creation_response(
+                        output_queue, file_path=new_file_path, message=f"in loop {i}"
+                    )
+
+                with open(new_file_path, "a", encoding="utf-16") as output_file:
+                    output_file.write("Here we go again")
+                await self.process_dir_update_response(
+                    output_queue,
+                    dir_path=new_subfolder_path,
+                    message=f"in loop {i}",
+                    allowed_queue_size=1,
+                )
+                await self.process_file_update_response(
+                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                )
+
+                # Move a file to a different location
+                post_move_file_path = os.path.join(
+                    new_subfolder_path, "moved_text_file_delete_me.txt"
+                )
+                os.rename(src=new_file_path, dst=post_move_file_path)
+
+                await self.process_dir_update_response(
+                    output_queue,
+                    dir_path=new_subfolder_path,
+                    message=f"in loop {i}",
+                    allowed_queue_size=1,
+                )
+                await self.process_file_deletion_response(
+                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                )  # This looks like some kind of artifact of the normalisation
+                await self.process_file_move_response(
+                    output_queue,
+                    file_src_parth=new_file_path,
+                    file_dst_path=post_move_file_path,
+                    message=f"in loop {i}",
+                )
+
+                os.unlink(post_move_file_path)
+                await self.process_dir_update_response(
+                    output_queue,
+                    dir_path=new_subfolder_path,
+                    message=f"in loop {i}",
+                    allowed_queue_size=1,
+                )
+                await self.process_file_deletion_response(
+                    output_queue, file_path=post_move_file_path, message=f"in loop {i}"
+                )
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="Linux (like) only test")
+    async def testDirTypeFSInput_existing_dir_create_update_move_file_loop_linux(
+        self,
+    ) -> None:
+        """
+        Check for the expected created signal from a file which is created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+
+            new_subfolder_path = os.path.join(tmp_dir_path, "subfolder_1", "subfolder_2")
+            os.makedirs(new_subfolder_path)
+
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for i in range(10):
+
+                # - Using blocking methods - this should still work
+                new_file_path = os.path.join(new_subfolder_path, "text_file_delete_me.txt")
+
+                with open(new_file_path, "w", encoding="utf-16") as output_file:
+                    output_file.write("Here we go")
+                if i == 0:
+                    await self.process_file_creation_response(
+                        output_queue, file_path=new_file_path, message=f"in loop {i}"
+                    )
+                else:
+                    await self.process_dir_update_response(
+                        output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                    )
+                    await self.process_file_creation_response(
+                        output_queue, file_path=new_file_path, message=f"in loop {i}"
+                    )
+
+                with open(new_file_path, "a", encoding="utf-16") as output_file:
+                    output_file.write("Here we go again")
+                await self.process_dir_update_response(
+                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                )
+                await self.process_file_update_response(
+                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                )
+
+                # Move a file to a different location
+                post_move_file_path = os.path.join(
+                    new_subfolder_path, "moved_text_file_delete_me.txt"
+                )
+                os.rename(src=new_file_path, dst=post_move_file_path)
+
+                await self.process_dir_update_response(
+                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                )
+                await self.process_file_update_response(
+                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                )
+                await self.process_dir_update_response(
+                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                )
+                await self.process_file_move_response(
+                    output_queue,
+                    file_src_parth=new_file_path,
+                    file_dst_path=post_move_file_path,
+                    message=f"in loop {i}",
+                )
+
+            await self.cancel_task(run_task)
+
     # - RUNNING TO DETECT DIR CHANGES
 
     @pytest.mark.asyncio
@@ -800,6 +947,141 @@ class TestDirTypeFSInput(FileSystemTestUtils):
                 )
                 await self.process_dir_update_response(
                     output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+                )
+
+            await self.cancel_task(run_task)
+
+
+
+
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Windows only test")
+    async def testDirTypeFSInput_existing_dir_create_move_dir_loop_in_subbir_windows(self) -> None:
+        """
+        Checks we get the expected created signal from a dir which is created in a monitored dir
+        Followed by moving the dir.
+        Repeated in a loop.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            
+            new_subfolder_path = os.path.join(tmp_dir_path, "subfolder_1", "subfolder_2")
+            os.makedirs(new_subfolder_path)
+            
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for i in range(10):
+
+                # - Using blocking methods - this should still work
+                new_dir_path = os.path.join(new_subfolder_path, "text_file_delete_me.txt")
+
+                os.mkdir(new_dir_path)
+                if i == 0:
+                    await self.process_dir_creation_response(
+                        output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                    )
+                else:
+
+                    await self.process_dir_creation_response(
+                        output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                    )
+
+                # Move a file to a different location
+                post_move_dir_path = os.path.join(
+                    new_subfolder_path, "moved_text_file_delete_me.txt"
+                )
+                os.rename(src=new_dir_path, dst=post_move_dir_path)
+
+                # I think this is a Windows problem - probably.
+                if i == 0:
+                    await self.process_dir_move_response(
+                        output_queue,
+                        dir_src_parth=new_dir_path,
+                        dir_dst_path=post_move_dir_path,
+                        message=f"in loop {i}",
+                    )
+                else:
+
+                    await self.process_dir_move_response(
+                        output_queue,
+                        dir_src_parth=new_dir_path,
+                        dir_dst_path=post_move_dir_path,
+                        message=f"in loop {i}",
+                    )
+
+                shutil.rmtree(post_move_dir_path)
+                await self.process_dir_update_response(
+                    output_queue,
+                    dir_path=new_subfolder_path,
+                    message=f"in loop {i}",
+                    allowed_queue_size=1,
+                )
+                await self.process_dir_deletion_response(
+                    output_queue, dir_path=post_move_dir_path, message=f"in loop {i}"
+                )
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="Linux (like) only test")
+    async def testDirTypeFSInput_existing_dir_create_move_dir_loop_linux(self) -> None:
+        """
+        Checks we get the expected created signal from a dir which is created in a monitored dir
+        Followed by moving the dir.
+        Repeated in a loop.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            
+            new_subfolder_path = os.path.join(tmp_dir_path, "subfolder_1", "subfolder_2")
+            os.makedirs(new_subfolder_path)
+
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            for i in range(10):
+
+                # - Using blocking methods - this should still work
+                new_dir_path = os.path.join(new_subfolder_path, "text_file_delete_me.txt")
+
+                os.mkdir(new_dir_path)
+                if i == 0:
+                    await self.process_dir_creation_response(
+                        output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                    )
+                else:
+                    await self.process_dir_creation_response(
+                        output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                    )
+                    await self.process_dir_update_response(
+                        output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                    )
+
+                # Move a file to a different location
+                post_move_dir_path = os.path.join(
+                    new_subfolder_path, "moved_text_file_delete_me.txt"
+                )
+                os.rename(src=new_dir_path, dst=post_move_dir_path)
+
+                # I think this is a Windows problem - probably.
+                if i == 0:
+                    await self.process_dir_update_response(
+                        output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                    )
+                await self.process_file_move_response(
+                    output_queue,
+                    file_src_parth=new_dir_path,
+                    file_dst_path=post_move_dir_path,
+                    message=f"in loop {i}",
+                )
+                await self.process_dir_update_response(
+                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                )
+
+                shutil.rmtree(post_move_dir_path)
+                await self.process_dir_deletion_response(
+                    output_queue, dir_path=post_move_dir_path, message=f"in loop {i}"
+                )
+                await self.process_dir_update_response(
+                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
                 )
 
             await self.cancel_task(run_task)
