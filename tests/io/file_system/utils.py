@@ -204,7 +204,7 @@ class FileSystemTestUtilsFileEvents(GeneralUtils):
             raise NotImplementedError(f"{output_queue} of unsupported type")
 
         for event in input_events:
-            if isinstance(event, CreatedFileFSInputEvent):
+            if isinstance(event, UpdatedFileFSInputEvent):
                 self.validate_file_update_input_event(
                     input_event=event, file_path=file_path, message=message
                 )
