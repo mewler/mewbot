@@ -312,11 +312,17 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
                 await asyncio.sleep(0.1)
 
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+                output_queue_list = self.dump_queue_to_list(output_queue)
+
+                self.check_queue_for_dir_update_input_event(
+                    output_queue=output_queue_list,
+                    dir_path=tmp_dir_path,
+                    message=f"in loop {i}",
                 )
-                await self.process_file_update_queue_response(
-                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                self.check_queue_for_file_update_input_event(
+                    output_queue=output_queue_list,
+                    file_path=new_file_path,
+                    message=f"in loop {i}",
                 )
 
                 # Move a file to a different location
