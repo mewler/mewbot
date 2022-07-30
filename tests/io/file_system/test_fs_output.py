@@ -16,7 +16,7 @@ from mewbot.io.file_system import (
     OverwriteFileFSOutputEvent,
     DeleteFileFSOutputEvent,
 )
-from .utils import FileSystemTestUtils
+from .utils import FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEvents
 
 
 # pylint: disable=invalid-name
@@ -24,7 +24,7 @@ from .utils import FileSystemTestUtils
 # which means CamelCase in function names
 
 
-class TestFileTypeFSOutput(FileSystemTestUtils):
+class TestFileTypeFSOutput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEvents):
 
     # - INIT AND ATTRIBUTES
     @pytest.mark.asyncio

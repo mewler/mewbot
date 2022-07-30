@@ -292,10 +292,13 @@ class WindowsFileSystemObserver:
                 return
 
             # Inotify on linux also notifies you of a change to the folder in this case
+
+            dir_path = os.path.split(event.src_path)[0]
+
             await self.send(
                 UpdatedDirFSInputEvent(
-                    dir_path=self._input_path,
-                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                    dir_path=dir_path,
+                    dir_async_path=aiopath.AsyncPath(dir_path),
                     base_event=None,
                 )
             )
@@ -322,10 +325,12 @@ class WindowsFileSystemObserver:
             # The user can be informed again that the file exists
             self._python_registers_created_cache.remove(event.src_path)
 
+            dir_path = os.path.split(event.src_path)[0]
+
             await self.send(
                 UpdatedDirFSInputEvent(
-                    dir_path=self._input_path,
-                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                    dir_path=dir_path,
+                    dir_async_path=aiopath.AsyncPath(dir_path),
                     base_event=None,
                 )
             )
@@ -407,6 +412,8 @@ class WindowsFileSystemObserver:
             # For some reason the watcher is emitting file delete events when a dir is deleted
             if event.src_path in self._dir_cache:
 
+                assert self._input_path is not None, "needed for pylint"
+
                 # Inotify on linux also notifies you of a change to the folder in this case
                 await self.send(
                     UpdatedDirFSInputEvent(
@@ -425,11 +432,13 @@ class WindowsFileSystemObserver:
                 )
                 return
 
+            dir_path = os.path.split(event.src_path)[0]
+
             # Inotify on linux also notifies you of a change to the folder in this case
             await self.send(
                 UpdatedDirFSInputEvent(
-                    dir_path=self._input_path,
-                    dir_async_path=aiopath.AsyncPath(self._input_path),
+                    dir_path=dir_path,
+                    dir_async_path=aiopath.AsyncPath(dir_path),
                     base_event=None,
                 )
             )

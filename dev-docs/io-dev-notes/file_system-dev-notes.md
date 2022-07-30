@@ -287,7 +287,16 @@ For simplicity, all 16 of the basic write modes ARE NOT supported - just these f
 These events must be explicitly created - and will fail.
 To stop the proliferation of message classes, there's a switch in the base class for binary or not.
 
+### Testing
 
+Has, in common with almost every other part of this module, proven to be a bit of an issue.
+The number and type of events produced by the underlying API seems to vary somewhat - annoyingly, not predictably.
+So you might get a semi-random number of update events before a delete - for examples.
+Hence - use the input part of this module with caution.
+It'll _mostly_ work - you do tend to always get creation events when a file or dir is created - likewise update events _mostly_ just mean something has been updated.
+Or created.
+Or is about to be deleted.
+Exercise caution, is what I'm saying here.
 
 
 
