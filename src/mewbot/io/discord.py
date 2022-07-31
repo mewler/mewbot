@@ -198,8 +198,7 @@ class DiscordInput(Input, discord.Client):  # type: ignore
             past_messages, key=lambda x: float(x.created_at.timestamp()), reverse=True
         )
 
-        for _ in range(self._startup_queue_depth):
-            message = past_messages[_]
+        for message in past_messages[0:self._startup_queue_depth]:
 
             if not isinstance(message, discord.Message):
                 self._logger.info("Expected a message and got a %s", type(message))
