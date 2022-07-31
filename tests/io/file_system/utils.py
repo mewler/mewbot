@@ -111,6 +111,7 @@ class GeneralUtils:
 
 
 class FileSystemTestUtilsFileEvents(GeneralUtils):
+
     def check_queue_for_file_creation_input_event(
         self,
         output_queue: Union[asyncio.Queue[InputEvent], List[InputEvent]],
