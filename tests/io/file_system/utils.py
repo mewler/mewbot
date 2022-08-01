@@ -1,20 +1,28 @@
 import asyncio
 
-from typing import Tuple, Optional, List, Union
+from typing import Tuple, Optional, List, Union, Type
 
 from mewbot.api.v1 import InputEvent
-from mewbot.io.file_system import (
+from mewbot.io.file_system.events import (
     InputFileFileCreationInputEvent,
-    InputFileDirCreationInputEvent,
     InputFileFileDeletionInputEvent,
+    InputFileDirCreationInputEvent,
+    InputFileDirDeletionInputEvent,
+
+    FileFSInputEvent,
     CreatedFileFSInputEvent,
     UpdatedFileFSInputEvent,
     MovedFileFSInputEvent,
     DeletedFileFSInputEvent,
+
+    DirFSInputEvent,
     CreatedDirFSInputEvent,
     MovedDirFSInputEvent,
     UpdatedDirFSInputEvent,
     DeletedDirFSInputEvent,
+
+)
+from mewbot.io.file_system import (
     DirTypeFSInput,
     FileTypeFSInput,
 )
@@ -111,6 +119,78 @@ class GeneralUtils:
 
 
 class FileSystemTestUtilsFileEvents(GeneralUtils):
+
+    async def process_file_event_queue_response(
+        self,
+        output_queue: asyncio.Queue[InputEvent],
+        event_type: Type[FileFSInputEvent],
+        file_path: Optional[str] = None,
+        allowed_queue_size: int = 0,
+        message: str = "",
+    ) -> None:
+        """
+        Get the next event off the queue.
+        Check that it's one for a file being created with expected file path.
+        """
+
+        # This should have generated an event
+        queue_out = await output_queue.get()
+        self.validate_file_input_event(
+            input_event=queue_out,
+            event_type=event_type,
+            file_path=file_path,
+            message=message
+        )
+
+        await self.verify_queue_size(output_queue, allowed_queue_size=allowed_queue_size)
+
+    def check_queue_for_file_input_event(
+        self,
+        output_queue: Union[asyncio.Queue[InputEvent], List[InputEvent]],
+        event_type: Type[FileFSInputEvent],
+        file_path: Optional[str] = None,
+        message: str = "",
+    ):
+        if isinstance(output_queue, asyncio.Queue):
+            input_events = self.dump_queue_to_list(output_queue)
+        elif isinstance(output_queue, list):
+            input_events = output_queue
+        else:
+            raise NotImplementedError(f"{output_queue} of unsupported type")
+
+        for event in input_events:
+            if isinstance(event, event_type):
+                self.validate_file_input_event(
+                    input_event=event,
+                    event_type=event_type,
+                    file_path=file_path,
+                    message=message
+                )
+                return
+
+        raise AssertionError(
+            f"CreatedFileFSInputEvent not found in input_events - {input_events}"
+        )
+
+    @staticmethod
+    def validate_file_input_event(
+        input_event: InputEvent,
+        event_type: Type[FileFSInputEvent],
+        file_path: Optional[str] = None,
+        message: str = "",
+    ) -> None:
+        assert isinstance(
+            input_event, event_type
+        ), f"Expected event of type {event_type.__name__} - got {input_event}" + (
+            f" - {message}" if message else ""
+        )
+
+        if file_path is not None:
+            assert input_event.file_path == file_path
+
+
+
+
     def check_queue_for_file_creation_input_event(
         self,
         output_queue: Union[asyncio.Queue[InputEvent], List[InputEvent]],
@@ -126,6 +206,7 @@ class FileSystemTestUtilsFileEvents(GeneralUtils):
             input_events = output_queue
         else:
             raise NotImplementedError(f"{output_queue} of unsupported type")
+
 
         for event in input_events:
             if isinstance(event, CreatedFileFSInputEvent):
@@ -392,6 +473,82 @@ class FileSystemTestUtilsFileEvents(GeneralUtils):
 
 
 class FileSystemTestUtilsDirEvents(GeneralUtils):
+
+    async def process_dir_event_queue_response(
+        self,
+        output_queue: asyncio.Queue[InputEvent],
+        event_type: Type[DirFSInputEvent],
+        dir_path: Optional[str] = None,
+        allowed_queue_size: int = 1,
+        message: str = "",
+    ) -> None:
+        """
+        Get the next event off the queue.
+        Check that it's one for a file being created with expected file path.
+        """
+
+        # This should have generated an event
+        queue_out = await output_queue.get()
+        self.validate_dir_input_event(
+            input_event=queue_out,
+            event_type=event_type,
+            dir_path=dir_path,
+            message=message
+        )
+
+        await self.verify_queue_size(output_queue, allowed_queue_size=allowed_queue_size)
+
+    def check_queue_for_dir_input_event(
+        self,
+        output_queue: Union[asyncio.Queue[InputEvent], List[InputEvent]],
+        event_type: Type[DirFSInputEvent],
+        dir_path: Optional[str] = None,
+        message: str = "",
+    ):
+        if isinstance(output_queue, asyncio.Queue):
+            input_events = self.dump_queue_to_list(output_queue)
+        elif isinstance(output_queue, list):
+            input_events = output_queue
+        else:
+            raise NotImplementedError(f"{output_queue} of unsupported type")
+
+        for event in input_events:
+            if isinstance(event, event_type):
+                self.validate_dir_input_event(
+                    input_event=event,
+                    event_type=event_type,
+                    dir_path=dir_path,
+                    message=message
+                )
+                return
+
+        raise AssertionError(
+            f"CreatedFileFSInputEvent not found in input_events - {input_events}"
+        )
+
+    @staticmethod
+    def validate_dir_input_event(
+        input_event: InputEvent,
+        event_type: Type[DirFSInputEvent],
+        dir_path: Optional[str] = None,
+        message: str = "",
+    ) -> None:
+        assert isinstance(
+            input_event, event_type
+        ), f"Expected event of type {event_type.__name__} - got {input_event}" + (
+            f" - {message}" if message else ""
+        )
+
+        if dir_path is not None:
+            assert input_event.dir_path == dir_path, f"expected {dir_path}, got {input_event.dir_path}"
+
+
+
+
+
+
+
+
     async def process_dir_creation_queue_response(
         self,
         output_queue: asyncio.Queue[InputEvent],
