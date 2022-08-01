@@ -360,40 +360,6 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
             await self.cancel_task(run_task)
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.platform.startswith("win"), reason="Linux (like) only test")
-    async def testDirTypeFSInput_existing_dir_cre_del_dir_windows(self) -> None:
-        """
-        Check that we get the expected created signal from a dir created in a monitored dir
-        Followed by an attempt to update the file.
-        """
-        with tempfile.TemporaryDirectory() as tmp_dir_path:
-            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
-
-            # - Using blocking methods - this should still work
-            new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
-
-            os.mkdir(new_dir_path)
-            await self.process_dir_event_queue_response(
-                output_queue=output_queue,
-                dir_path=new_dir_path,
-                event_type=CreatedDirFSInputEvent,
-            )
-
-            shutil.rmtree(new_dir_path)
-            await self.process_dir_event_queue_response(
-                output_queue=output_queue,
-                dir_path=new_dir_path,
-                event_type=UpdatedDirFSInputEvent,
-            )
-            await self.process_dir_event_queue_response(
-                output_queue=output_queue,
-                dir_path=new_dir_path,
-                event_type=DeletedDirFSInputEvent,
-            )
-
-            await self.cancel_task(run_task)
-
-    @pytest.mark.asyncio
     @pytest.mark.skipif(not sys.platform.startswith("win"), reason="Windows only test")
     async def testDirTypeFSInput_existing_dir_cre_del_dir_loop_windows(self) -> None:
         """

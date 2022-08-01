@@ -16,6 +16,26 @@ from mewbot.io.file_system import (
 
 from .utils import FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEvents
 
+from mewbot.io.file_system.events import (
+    InputFileFileCreationInputEvent,
+    InputFileFileDeletionInputEvent,
+    InputFileDirCreationInputEvent,
+    InputFileDirDeletionInputEvent,
+
+    FileFSInputEvent,
+    CreatedFileFSInputEvent,
+    UpdatedFileFSInputEvent,
+    MovedFileFSInputEvent,
+    DeletedFileFSInputEvent,
+
+    DirFSInputEvent,
+    CreatedDirFSInputEvent,
+    MovedDirFSInputEvent,
+    UpdatedDirFSInputEvent,
+    DeletedDirFSInputEvent,
+
+)
+
 # pylint: disable=invalid-name
 # for clarity, test functions should be named after the things they test
 # which means CamelCase in function names
@@ -90,8 +110,11 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
             with open(new_file_path, "w", encoding="utf-16") as output_file:
                 output_file.write("Here we go")
-            await self.process_file_creation_queue_response(
-                output_queue, file_path=new_file_path
+
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_file_path,
+                event_type=CreatedFileFSInputEvent
             )
 
             await self.cancel_task(run_task)
@@ -112,35 +135,50 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
             with open(new_dir_path, "w", encoding="utf-16") as output_file:
                 output_file.write("Here we go")
-            await self.process_file_creation_queue_response(
-                output_queue, file_path=new_dir_path, message=f"{new_dir_path} written"
+            await self.process_file_event_queue_response(
+                output_queue=output_queue, file_path=new_dir_path, message=f"{new_dir_path} written",
+                event_type=CreatedFileFSInputEvent
             )
 
             with open(new_dir_path, "a", encoding="utf-16") as output_file:
                 output_file.write("Here we go again")
-            await self.process_dir_update_queue_response(
-                output_queue,
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
                 dir_path=tmp_dir_path,
                 allowed_queue_size=1,
                 message=f"{new_dir_path} written",
+                event_type=UpdatedDirFSInputEvent
             )
-            await self.process_file_update_queue_response(
-                output_queue, file_path=new_dir_path
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_dir_path,
+                event_type=UpdatedFileFSInputEvent
             )
 
             os.unlink(new_dir_path)
-            await self.process_dir_update_queue_response(
-                output_queue, dir_path=tmp_dir_path, allowed_queue_size=1
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                allowed_queue_size=1,
+                event_type=UpdatedDirFSInputEvent
             )
+
             # Probably do not want
-            await self.process_file_update_queue_response(
-                output_queue, file_path=new_dir_path
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_dir_path,
+                event_type=UpdatedFileFSInputEvent
             )
-            await self.process_dir_update_queue_response(
-                output_queue, dir_path=tmp_dir_path, allowed_queue_size=1
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                allowed_queue_size=1,
+                event_type=UpdatedDirFSInputEvent
             )
-            await self.process_file_deletion_queue_response(
-                output_queue, file_path=new_dir_path
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_dir_path,
+                event_type=DeletedFileFSInputEvent
             )
 
             await self.cancel_task(run_task)
@@ -159,17 +197,24 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
             with open(new_file_path, "w", encoding="utf-16") as output_file:
                 output_file.write("Here we go")
-            await self.process_file_creation_queue_response(
-                output_queue, file_path=new_file_path
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_file_path,
+                event_type=CreatedFileFSInputEvent
             )
 
             with open(new_file_path, "a", encoding="utf-16") as output_file:
                 output_file.write("Here we go again")
-            await self.process_dir_update_queue_response(
-                output_queue, dir_path=tmp_dir_path, allowed_queue_size=1
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                allowed_queue_size=1,
+                event_type=UpdatedDirFSInputEvent
             )
-            await self.process_file_update_queue_response(
-                output_queue, file_path=new_file_path
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_file_path,
+                event_type=UpdatedFileFSInputEvent
             )
 
             await self.cancel_task(run_task)
@@ -195,40 +240,66 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
                     output_file.write("Here we go")
                 # This is just ... utterly weird
                 if i == 0:
-                    await self.process_file_creation_queue_response(
-                        output_queue, file_path=new_file_path, message=f"in loop {i}"
+                    await self.process_file_event_queue_response(
+                        output_queue=output_queue,
+                        file_path=new_file_path,
+                        message=f"in loop {i}",
+                        event_type=CreatedFileFSInputEvent
                     )
                 else:
-                    await self.process_dir_update_queue_response(
-                        output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=tmp_dir_path,
+                        message=f"in loop {i}",
+                        event_type=UpdatedDirFSInputEvent
                     )
-                    await self.process_file_creation_queue_response(
-                        output_queue, file_path=new_file_path, message=f"in loop {i}"
+                    await self.process_file_event_queue_response(
+                        output_queue=output_queue,
+                        file_path=new_file_path,
+                        message=f"in loop {i}",
+                        event_type=CreatedFileFSInputEvent
                     )
 
                 with open(new_file_path, "a", encoding="utf-16") as output_file:
                     output_file.write(f"Here we go again - {i}")
 
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=tmp_dir_path,
+                    event_type=UpdatedDirFSInputEvent
                 )
-                await self.process_file_update_queue_response(
-                    output_queue, file_path=new_file_path
+                await self.process_file_event_queue_response(
+                    output_queue=output_queue,
+                    file_path=new_file_path,
+                    event_type=UpdatedFileFSInputEvent
                 )
 
                 os.unlink(new_file_path)
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=tmp_dir_path,
+                    event_type=UpdatedDirFSInputEvent
                 )
+
                 # Probably do not want
-                await self.process_file_update_queue_response(
-                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                await self.process_file_event_queue_response(
+                    output_queue=output_queue,
+                    file_path=new_file_path,
+                    message=f"in loop {i}",
+                    event_type=UpdatedFileFSInputEvent
                 )
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=tmp_dir_path,
+                    message=f"in loop {i}",
+                    event_type=UpdatedDirFSInputEvent
                 )
-                await self.process_file_deletion_queue_response(
-                    output_queue, file_path=new_file_path, message=f"in loop {i}"
+                await self.process_file_event_queue_response(
+                    output_queue=output_queue,
+                    file_path=new_file_path,
+                    message=f"in loop {i}",
+                    event_type=DeletedFileFSInputEvent
                 )
 
             await self.cancel_task(run_task)
@@ -248,26 +319,44 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
             with open(new_file_path, "w", encoding="utf-16") as output_file:
                 output_file.write("Here we go")
-            await self.process_file_creation_queue_response(
-                output_queue, file_path=new_file_path
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_file_path,
+                event_type=CreatedFileFSInputEvent
             )
 
             with open(new_file_path, "a", encoding="utf-16") as output_file:
                 output_file.write("Here we go again")
-            await self.process_dir_update_queue_response(output_queue, dir_path=tmp_dir_path)
-            await self.process_file_update_queue_response(
-                output_queue, file_path=new_file_path
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                event_type=UpdatedDirFSInputEvent
+            )
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_file_path,
+                event_type=UpdatedFileFSInputEvent
             )
 
             # Move a file to a different location
             post_move_file_path = os.path.join(tmp_dir_path, "moved_text_file_delete_me.txt")
             os.rename(src=new_file_path, dst=post_move_file_path)
 
-            await self.process_dir_update_queue_response(output_queue, dir_path=tmp_dir_path)
-            await self.process_file_update_queue_response(
-                output_queue, file_path=new_file_path
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                event_type=UpdatedDirFSInputEvent
             )
-            await self.process_dir_update_queue_response(output_queue, dir_path=tmp_dir_path)
+            await self.process_file_event_queue_response(
+                output_queue=output_queue,
+                file_path=new_file_path,
+                event_type=UpdatedFileFSInputEvent
+            )
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                event_type=UpdatedDirFSInputEvent
+            )
             await self.process_file_move_queue_response(
                 output_queue,
                 file_src_parth=new_file_path,
@@ -295,17 +384,13 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
                 with open(new_file_path, "w", encoding="utf-16") as output_file:
                     output_file.write("Here we go")
-                if i == 0:
-                    await self.process_file_creation_queue_response(
-                        output_queue, file_path=new_file_path, message=f"in loop {i}"
-                    )
-                else:
-                    await self.process_dir_update_queue_response(
-                        output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
-                    )
-                    await self.process_file_creation_queue_response(
-                        output_queue, file_path=new_file_path, message=f"in loop {i}"
-                    )
+
+                await asyncio.sleep(0.5)
+                output_queue_list = self.dump_queue_to_list(output_queue)
+
+                self.check_queue_for_file_creation_input_event(
+                    output_queue=output_queue_list, file_path=new_file_path, message=f"in loop {i}"
+                )
 
                 with open(new_file_path, "a", encoding="utf-16") as output_file:
                     output_file.write("Here we go again")
@@ -330,20 +415,18 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
                     tmp_dir_path, "moved_text_file_delete_me.txt"
                 )
                 os.rename(src=new_file_path, dst=post_move_file_path)
+                await asyncio.sleep(0.5)
 
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+                output_queue_list = self.dump_queue_to_list(output_queue)
+
+                self.check_queue_for_dir_update_input_event(
+                    output_queue=output_queue_list, dir_path=tmp_dir_path, message=f"in loop {i}"
                 )
-                await self.process_file_update_queue_response(
-                    output_queue, file_path=new_file_path, message=f"in loop {i}"
-                )
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
-                )
-                await self.process_file_move_queue_response(
-                    output_queue,
+                self.check_queue_for_file_move_input_event(
+                    output_queue=output_queue_list,
                     file_src_parth=new_file_path,
                     file_dst_path=post_move_file_path,
+                    message=f"in loop {i}"
                 )
 
             await self.cancel_task(run_task)
@@ -363,8 +446,44 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
             new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
 
             os.mkdir(new_dir_path)
-            await self.process_dir_creation_queue_response(
-                output_queue, dir_path=new_dir_path
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=new_dir_path,
+                event_type=CreatedDirFSInputEvent
+            )
+
+            await self.cancel_task(run_task)
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="Linux (like) only test")
+    async def testDirTypeFSInput_existing_dir_cre_del_dir_windows(self) -> None:
+        """
+        Check that we get the expected created signal from a dir created in a monitored dir
+        Followed by an attempt to update the file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir_path:
+            run_task, output_queue = await self.get_DirTypeFSInput(tmp_dir_path)
+
+            # - Using blocking methods - this should still work
+            new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
+
+            os.mkdir(new_dir_path)
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=new_dir_path,
+                event_type=CreatedDirFSInputEvent,
+            )
+
+            shutil.rmtree(new_dir_path)
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                event_type=UpdatedDirFSInputEvent,
+            )
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=new_dir_path,
+                event_type=DeletedDirFSInputEvent,
             )
 
             await self.cancel_task(run_task)
@@ -387,23 +506,40 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
                 os.mkdir(new_dir_path)
                 if i == 0:
-                    await self.process_dir_creation_queue_response(
-                        output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=new_dir_path,
+                        message=f"in loop {i}",
+                        event_type=CreatedDirFSInputEvent
                     )
+
                 else:
-                    await self.process_dir_update_queue_response(
-                        output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=tmp_dir_path,
+                        message=f"in loop {i}",
+                        event_type=UpdatedDirFSInputEvent
                     )
-                    await self.process_dir_creation_queue_response(
-                        output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=new_dir_path,
+                        message=f"in loop {i}",
+                        event_type=CreatedDirFSInputEvent
                     )
 
                 shutil.rmtree(new_dir_path)
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=tmp_dir_path, message=f"in loop {i}"
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=tmp_dir_path,
+                    message=f"in loop {i}",
+                    event_type=UpdatedDirFSInputEvent
                 )
-                await self.process_dir_deletion_queue_response(
-                    output_queue, dir_path=new_dir_path, message=f"in loop {i}"
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=new_dir_path,
+                    message=f"in loop {i}",
+                    event_type=DeletedDirFSInputEvent
                 )
 
             await self.cancel_task(run_task)
@@ -423,8 +559,10 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
             new_dir_path = os.path.join(tmp_dir_path, "text_file_delete_me.txt")
 
             os.mkdir(new_dir_path)
-            await self.process_dir_creation_queue_response(
-                output_queue, dir_path=new_dir_path
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=new_dir_path,
+                event_type=CreatedDirFSInputEvent
             )
 
             await asyncio.sleep(0.1)
@@ -436,7 +574,11 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
             # This is an asymmetry between how files and folders handle delete
             # left in while I try and think how to deal sanely with it
             # await self.process_dir_deletion_response(output_queue, dir_path=new_dir_path)
-            await self.process_dir_update_queue_response(output_queue, dir_path=tmp_dir_path)
+            await self.process_dir_event_queue_response(
+                output_queue=output_queue,
+                dir_path=tmp_dir_path,
+                event_type=UpdatedDirFSInputEvent
+            )
             await self.process_file_move_queue_response(
                 output_queue, file_src_parth=new_dir_path, file_dst_path=post_move_dir_path
             )
@@ -465,17 +607,24 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
                 os.mkdir(new_dir_path)
                 if i == 0:
-                    await self.process_dir_creation_queue_response(
-                        output_queue, dir_path=new_dir_path, message=f"linux - in loop {i}"
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=new_dir_path,
+                        message=f"linux - in loop {i}",
+                        event_type=CreatedDirFSInputEvent
                     )
                 else:
-                    await self.process_dir_creation_queue_response(
-                        output_queue, dir_path=new_dir_path, message=f"linx - in loop {i}"
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=new_dir_path,
+                        message=f"linux - in loop {i}",
+                        event_type=CreatedDirFSInputEvent
                     )
-                    await self.process_dir_update_queue_response(
-                        output_queue,
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
                         dir_path=new_subfolder_path,
                         message=f"linux - in loop {i}",
+                        event_type=UpdatedDirFSInputEvent
                     )
 
                 # Move a file to a different location
@@ -486,24 +635,36 @@ class TestDirTypeFSInput(FileSystemTestUtilsDirEvents, FileSystemTestUtilsFileEv
 
                 # I think this is a Windows problem - probably.
                 if i == 0:
-                    await self.process_dir_update_queue_response(
-                        output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                    await self.process_dir_event_queue_response(
+                        output_queue=output_queue,
+                        dir_path=new_subfolder_path,
+                        message=f"in loop {i}",
+                        event_type=UpdatedDirFSInputEvent
                     )
                 await self.process_file_move_queue_response(
                     output_queue,
                     file_src_parth=new_dir_path,
                     file_dst_path=post_move_dir_path,
                 )
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=new_subfolder_path,
+                    message=f"in loop {i}",
+                    event_type=UpdatedDirFSInputEvent
                 )
 
                 shutil.rmtree(post_move_dir_path)
-                await self.process_dir_deletion_queue_response(
-                    output_queue, dir_path=post_move_dir_path, message=f"in loop {i}"
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=post_move_dir_path,
+                    message=f"in loop {i}",
+                    event_type=DeletedDirFSInputEvent
                 )
-                await self.process_dir_update_queue_response(
-                    output_queue, dir_path=new_subfolder_path, message=f"in loop {i}"
+                await self.process_dir_event_queue_response(
+                    output_queue=output_queue,
+                    dir_path=new_subfolder_path,
+                    message=f"in loop {i}",
+                    event_type=UpdatedDirFSInputEvent
                 )
 
             await self.cancel_task(run_task)
